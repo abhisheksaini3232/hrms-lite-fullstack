@@ -12,7 +12,7 @@ npm run dev
 
 - `VITE_API_URL`
 	- Local: `http://localhost:8000`
-	- Production: your Render URL, e.g. `https://<your-service>.onrender.com`
+	- Production: `https://hrms-lite-fullstack-cqgp.onrender.com`
 
 Note:
 

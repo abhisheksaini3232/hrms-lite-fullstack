@@ -61,13 +61,18 @@ Open:
 
 ## Deployment
 
+### Your Production URLs (current)
+
+- Backend (Render): https://hrms-lite-fullstack-cqgp.onrender.com
+- Frontend (Vercel): https://hrms-lite-fullstack-1gk4-oqawjuct6.vercel.app
+
 ### Frontend → Vercel
 
 1. Push this repo to GitHub.
 2. In Vercel: **New Project** → import the repo.
 3. Set **Root Directory** to `frontend`.
 4. Environment Variables:
-   - `VITE_API_URL` = your Render API URL (example: `https://<your-service>.onrender.com`)
+   - `VITE_API_URL` = `https://hrms-lite-fullstack-cqgp.onrender.com`
 5. Deploy.
 
 ### Backend → Render
@@ -77,7 +82,7 @@ Option A (recommended): Blueprint using `render.yaml`
 1. In Render: **New** → **Blueprint** → connect the repo.
 2. Set env vars:
    - `MONGODB_URI` (from Atlas)
-   - `CORS_ORIGINS` = `https://<your-vercel-app>.vercel.app` (comma-separated allowed)
+   - `CORS_ORIGINS` = `https://hrms-lite-fullstack-1gk4-oqawjuct6.vercel.app`
 3. Deploy.
 
 Option B: Manual Web Service
@@ -89,7 +94,7 @@ Option B: Manual Web Service
 Notes:
 
 - Python is pinned to `3.12.8` via `.python-version` and `render.yaml`.
-- If you use multiple Vercel domains (preview + production), add both to `CORS_ORIGINS`.
+- If you use multiple Vercel domains (preview + production), add both to `CORS_ORIGINS` (comma-separated).
 
 ---
 

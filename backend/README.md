@@ -27,7 +27,7 @@ Python:
 Examples:
 
 - `CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173`
-- `CORS_ORIGINS=https://<your-app>.vercel.app`
+- `CORS_ORIGINS=https://hrms-lite-fullstack-1gk4-oqawjuct6.vercel.app`
 
 ## Routes
 
