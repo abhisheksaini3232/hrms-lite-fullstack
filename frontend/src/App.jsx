@@ -463,26 +463,6 @@ export default function App() {
                   </label>
                 </div>
 
-                <div className="grid2">
-                  <label>
-                    Filter Records by Date (optional)
-                    <input
-                      type="date"
-                      value={attendanceFilterDate}
-                      onChange={(e) => setAttendanceFilterDate(e.target.value)}
-                    />
-                  </label>
-                  <div className="row" style={{ alignSelf: "end" }}>
-                    <button
-                      type="button"
-                      className="ghostBtn"
-                      onClick={() => setAttendanceFilterDate("")}
-                      disabled={!attendanceFilterDate}
-                    >
-                      Clear Filter
-                    </button>
-                  </div>
-                </div>
                 <label>
                   Status
                   <select
@@ -508,6 +488,27 @@ export default function App() {
               <h2>Attendance Records</h2>
               <div className="pill">
                 Present Days (loaded): <strong>{presentDays}</strong>
+              </div>
+            </div>
+
+            <div className="grid2" style={{ marginTop: 12 }}>
+              <label>
+                Filter Records by Date (optional)
+                <input
+                  type="date"
+                  value={attendanceFilterDate}
+                  onChange={(e) => setAttendanceFilterDate(e.target.value)}
+                />
+              </label>
+              <div className="row" style={{ alignSelf: "end" }}>
+                <button
+                  type="button"
+                  className="ghostBtn"
+                  onClick={() => setAttendanceFilterDate("")}
+                  disabled={!attendanceFilterDate}
+                >
+                  Clear Filter
+                </button>
               </div>
             </div>
 
