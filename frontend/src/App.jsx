@@ -26,7 +26,8 @@ export default function App() {
     new Date().toISOString().slice(0, 10)
   );
   const [attendanceStatus, setAttendanceStatus] = useState("Present");
-  const [attendanceFilterDate, setAttendanceFilterDate] = useState("");
+  const [attendanceFilterFrom, setAttendanceFilterFrom] = useState("");
+  const [attendanceFilterTo, setAttendanceFilterTo] = useState("");
   const [attendance, setAttendance] = useState([]);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [attendanceError, setAttendanceError] = useState("");
@@ -82,7 +83,7 @@ export default function App() {
     refreshDashboard();
   }, []);
 
-  async function refreshAttendance(nextEmployeeId = selectedEmployeeId, date = "") {
+  async function refreshAttendance(nextEmployeeId = selectedEmployeeId, filters) {
     if (!nextEmployeeId) {
       setAttendance([]);
       return;
@@ -90,7 +91,7 @@ export default function App() {
     setAttendanceLoading(true);
     setAttendanceError("");
     try {
-      const data = await getAttendance(nextEmployeeId, date || undefined);
+      const data = await getAttendance(nextEmployeeId, filters);
       setAttendance(data);
     } catch (e) {
       setAttendanceError(e?.message || "Failed to load attendance");
@@ -101,9 +102,12 @@ export default function App() {
 
   useEffect(() => {
     if (tab !== "attendance") return;
-    refreshAttendance(selectedEmployeeId, attendanceFilterDate);
+    refreshAttendance(selectedEmployeeId, {
+      from: attendanceFilterFrom || undefined,
+      to: attendanceFilterTo || undefined,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, selectedEmployeeId, attendanceFilterDate]);
+  }, [tab, selectedEmployeeId, attendanceFilterFrom, attendanceFilterTo]);
 
   async function onAdd(e) {
     e.preventDefault();
@@ -158,7 +162,10 @@ export default function App() {
         date: attendanceDate,
         status: attendanceStatus,
       });
-      await refreshAttendance(selectedEmployeeId, attendanceFilterDate);
+      await refreshAttendance(selectedEmployeeId, {
+        from: attendanceFilterFrom || undefined,
+        to: attendanceFilterTo || undefined,
+      });
       refreshDashboard();
     } catch (e) {
       setAttendanceError(e?.message || "Failed to mark attendance");
@@ -259,7 +266,6 @@ export default function App() {
         <>
           <section className="card">
             <div className="cardHeader">
-              <h2>Dashboard</h2>
               <div className="row">
                 <div className="pill">Employees: <strong>{employees.length}</strong></div>
                 <div className="pill">Present records: <strong>{dashboard?.present_total ?? "—"}</strong></div>
@@ -493,23 +499,34 @@ export default function App() {
 
             <div className="grid2" style={{ marginTop: 12 }}>
               <label>
-                Filter Records by Date (optional)
+                From (optional)
                 <input
                   type="date"
-                  value={attendanceFilterDate}
-                  onChange={(e) => setAttendanceFilterDate(e.target.value)}
+                  value={attendanceFilterFrom}
+                  onChange={(e) => setAttendanceFilterFrom(e.target.value)}
                 />
               </label>
-              <div className="row" style={{ alignSelf: "end" }}>
-                <button
-                  type="button"
-                  className="ghostBtn"
-                  onClick={() => setAttendanceFilterDate("")}
-                  disabled={!attendanceFilterDate}
-                >
-                  Clear Filter
-                </button>
-              </div>
+              <label>
+                To (optional)
+                <input
+                  type="date"
+                  value={attendanceFilterTo}
+                  onChange={(e) => setAttendanceFilterTo(e.target.value)}
+                />
+              </label>
+            </div>
+            <div className="row" style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                className="ghostBtn"
+                onClick={() => {
+                  setAttendanceFilterFrom("");
+                  setAttendanceFilterTo("");
+                }}
+                disabled={!attendanceFilterFrom && !attendanceFilterTo}
+              >
+                Clear Filter
+              </button>
             </div>
 
             {attendanceLoading ? (

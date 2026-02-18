@@ -55,9 +55,21 @@ export async function markAttendance(employeeId, payload) {
   return res.json();
 }
 
-export async function getAttendance(employeeId, date) {
+export async function getAttendance(employeeId, filters) {
   const url = new URL(`${API_URL}/employees/${employeeId}/attendance`);
-  if (date) url.searchParams.set("date", date);
+
+  if (typeof filters === "string") {
+    if (filters) url.searchParams.set("date", filters);
+  } else {
+    const date = filters?.date;
+    const dateFrom = filters?.from;
+    const dateTo = filters?.to;
+
+    if (date) url.searchParams.set("date", date);
+    if (dateFrom) url.searchParams.set("date_from", dateFrom);
+    if (dateTo) url.searchParams.set("date_to", dateTo);
+  }
+
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error(await readError(res));
   return res.json();

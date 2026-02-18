@@ -121,6 +121,14 @@ async def mark_attendance(employee_id: str, payload: AttendanceCreate):
 async def list_attendance(
     employee_id: str,
     date: str | None = Query(default=None, description="Filter by YYYY-MM-DD"),
+    date_from: str | None = Query(
+        default=None,
+        description="Filter range start (YYYY-MM-DD)",
+    ),
+    date_to: str | None = Query(
+        default=None,
+        description="Filter range end (YYYY-MM-DD)",
+    ),
 ):
     db = get_db()
 
@@ -131,6 +139,20 @@ async def list_attendance(
     query = {"employee_id": employee_id}
     if date:
         query["date"] = date
+    else:
+        if date_from and date_to and date_from > date_to:
+            raise HTTPException(
+                status_code=422,
+                detail="Invalid date range: date_from must be <= date_to",
+            )
+
+        date_range: dict[str, str] = {}
+        if date_from:
+            date_range["$gte"] = date_from
+        if date_to:
+            date_range["$lte"] = date_to
+        if date_range:
+            query["date"] = date_range
 
     cursor = db.attendance.find(query).sort("date", -1).limit(366)
     docs = await cursor.to_list(length=366)
