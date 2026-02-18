@@ -289,12 +289,12 @@ export default function App() {
                   <tbody>
                     {dashboardRows.map((r) => (
                       <tr key={r.employee_id}>
-                        <td className="mono">{r.employee_id}</td>
-                        <td>{r.full_name || "—"}</td>
-                        <td>{r.department || "—"}</td>
-                        <td className="mono">{r.present_days}</td>
-                        <td className="mono">{r.absent_days}</td>
-                        <td className="mono">{r.total_records}</td>
+                        <td className="mono" data-label="Employee ID">{r.employee_id}</td>
+                        <td data-label="Full Name">{r.full_name || "—"}</td>
+                        <td data-label="Department">{r.department || "—"}</td>
+                        <td className="mono" data-label="Present Days">{r.present_days}</td>
+                        <td className="mono" data-label="Absent Days">{r.absent_days}</td>
+                        <td className="mono" data-label="Total Records">{r.total_records}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -386,11 +386,11 @@ export default function App() {
                   <tbody>
                     {employees.map((emp) => (
                       <tr key={emp.employee_id}>
-                        <td className="mono">{emp.employee_id}</td>
-                        <td>{emp.full_name}</td>
-                        <td>{emp.email}</td>
-                        <td>{emp.department}</td>
-                        <td className="actions actionsCol">
+                        <td className="mono" data-label="Employee ID">{emp.employee_id}</td>
+                        <td data-label="Full Name">{emp.full_name}</td>
+                        <td data-label="Email">{emp.email}</td>
+                        <td data-label="Department">{emp.department}</td>
+                        <td className="actions actionsCol" data-label="Actions">
                           <div className="actionsWrap">
                             <button
                               className="actionBtn"
@@ -529,8 +529,8 @@ export default function App() {
                   <tbody>
                     {attendance.map((a) => (
                       <tr key={`${a.employee_id}-${a.date}`}>
-                        <td className="mono">{a.date}</td>
-                        <td>
+                        <td className="mono" data-label="Date">{a.date}</td>
+                        <td data-label="Status">
                           <span className={a.status === "Present" ? "badge ok" : "badge bad"}>
                             {a.status}
                           </span>

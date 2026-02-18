@@ -303,6 +303,66 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+@media (max-width: 640px) {
+  .tableWrap {
+    overflow: visible;
+  }
+
+  .table {
+    table-layout: auto;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table tr {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 12px;
+    background: #fff;
+  }
+
+  .table td {
+    border-bottom: 0;
+    padding: 8px 0;
+    overflow-wrap: anywhere;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    color: #111827;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .actionsCol {
+    width: auto;
+  }
+
+  .actionsWrap {
+    gap: 8px;
+  }
+
+  .actionsWrap button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 @media (max-width: 860px) {
   .actionsCol {
     width: 240px;
