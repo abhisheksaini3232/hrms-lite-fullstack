@@ -76,8 +76,7 @@ Open:
 
 ### Your Production URLs (current)
 
-- Backend (Render): https://hrms-lite-fullstack-cqgp.onrender.com
-- Frontend (Vercel): https://hrms-lite-fullstack-1gk4-oqawjuct6.vercel.app
+- Frontend (Vercel): https://hrms-lite-fullstack-jxc6.vercel.app/
 
 ### Frontend → Vercel
 
