@@ -3,5 +3,4 @@ uvicorn==0.34.0
 motor==3.6.1
 pydantic==2.10.6
 pydantic-settings==2.7.1
-python-dotenv==1.0.1
 certifi>=2024.2.2

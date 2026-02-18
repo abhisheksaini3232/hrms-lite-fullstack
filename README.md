@@ -1,5 +1,12 @@
 # HRMS Lite (React + FastAPI + MongoDB Atlas)
 
+A lightweight HRMS app with:
+
+- Employees CRUD (create, list, delete)
+- Attendance marking (Present/Absent) + per-employee records
+- Attendance records filtering by date
+- Dashboard summary (`/dashboard/summary`) with per-employee totals
+
 ## Folder Structure
 
 - `frontend/` React (Vite)
@@ -60,7 +67,7 @@ Open:
 2. In Vercel: **New Project** → import the repo.
 3. Set **Root Directory** to `frontend`.
 4. Environment Variables:
-   - `VITE_API_URL` = your Render API URL (example: `https://hrms-lite-api.onrender.com`)
+   - `VITE_API_URL` = your Render API URL (example: `https://<your-service>.onrender.com`)
 5. Deploy.
 
 ### Backend → Render
@@ -70,7 +77,7 @@ Option A (recommended): Blueprint using `render.yaml`
 1. In Render: **New** → **Blueprint** → connect the repo.
 2. Set env vars:
    - `MONGODB_URI` (from Atlas)
-   - `CORS_ORIGINS` = `https://<your-vercel-app>.vercel.app`
+   - `CORS_ORIGINS` = `https://<your-vercel-app>.vercel.app` (comma-separated allowed)
 3. Deploy.
 
 Option B: Manual Web Service
@@ -78,6 +85,11 @@ Option B: Manual Web Service
 - Root Directory: `backend`
 - Build Command: `pip install -r requirements.txt`
 - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+
+Notes:
+
+- Python is pinned to `3.12.8` via `.python-version` and `render.yaml`.
+- If you use multiple Vercel domains (preview + production), add both to `CORS_ORIGINS`.
 
 ---
 
@@ -89,3 +101,4 @@ Option B: Manual Web Service
 - `DELETE /employees/{employee_id}`
 - `POST /employees/{employee_id}/attendance` body: `{ "date": "YYYY-MM-DD", "status": "Present" | "Absent" }`
 - `GET /employees/{employee_id}/attendance` (optional query: `?date=YYYY-MM-DD`)
+- `GET /dashboard/summary`
