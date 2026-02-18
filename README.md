@@ -7,6 +7,19 @@ A lightweight HRMS app with:
 - Attendance records filtering by date
 - Dashboard summary (`/dashboard/summary`) with per-employee totals
 
+## Tech Stack
+
+- Frontend: React (Vite)
+- Backend: FastAPI (Python)
+- Database: MongoDB (Atlas) via Motor (async driver)
+- Deployment: Vercel (frontend) + Render (backend)
+
+## Assumptions / Limitations
+
+- Single admin user; no authentication/authorization.
+- Scope intentionally limited to employee CRUD + attendance (no payroll/leave/etc).
+- Attendance is tracked per employee per date (marking the same date again updates the status).
+
 ## Folder Structure
 
 - `frontend/` React (Vite)

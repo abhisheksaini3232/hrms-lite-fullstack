@@ -1,4 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
+import Topbar from "./components/Topbar.jsx";
+import EmployeesTab from "./components/EmployeesTab.jsx";
+import AttendanceTab from "./components/AttendanceTab.jsx";
 import {
   createEmployee,
   deleteEmployee,
@@ -83,6 +86,7 @@ export default function App() {
   useEffect(() => {
     refresh();
     refreshDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function refreshAttendance(
@@ -188,553 +192,52 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="topbarInner">
-          <div className="brand">
-            <div className="brandIcon" aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M16 11c1.656 0 3-1.567 3-3.5S17.656 4 16 4s-3 1.567-3 3.5S14.344 11 16 11Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M8 11c1.656 0 3-1.567 3-3.5S9.656 4 8 4 5 5.567 5 7.5 6.344 11 8 11Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M3 20c0-3.314 2.686-6 6-6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M21 20c0-3.314-2.686-6-6-6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M9 20c0-3.314 1.791-6 4-6s4 2.686 4 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <div>
-              <div className="brandTitle">HRMS Lite</div>
-              <div className="brandSub">
-                {tab === "employees"
-                  ? "Employee Management"
-                  : "Mark Attendance"}
-              </div>
-            </div>
-          </div>
-
-          <nav className="navPills" aria-label="Primary">
-            <button
-              type="button"
-              className={tab === "employees" ? "pillBtn active" : "pillBtn"}
-              onClick={() => setTab("employees")}
-            >
-              <span className="pillIcon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M16 11c1.656 0 3-1.567 3-3.5S17.656 4 16 4s-3 1.567-3 3.5S14.344 11 16 11Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M8 11c1.656 0 3-1.567 3-3.5S9.656 4 8 4 5 5.567 5 7.5 6.344 11 8 11Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M3 20c0-3.314 2.686-6 6-6"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M21 20c0-3.314-2.686-6-6-6"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </span>
-              Employees
-            </button>
-            <button
-              type="button"
-              className={tab === "attendance" ? "pillBtn active" : "pillBtn"}
-              onClick={() => setTab("attendance")}
-            >
-              <span className="pillIcon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12 21a9 9 0 1 0-9-9 9 9 0 0 0 9 9Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M12 7v5l3 2"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-              Mark Attendance
-            </button>
-          </nav>
-        </div>
-      </header>
+      <Topbar tab={tab} onTabChange={setTab} />
 
       <main className="shell">
         {tab === "employees" ? (
-          <section className="hero">
-            <h1>Employees</h1>
-            <p className="heroSub">
-              Manage your team members and their records
-            </p>
-            <button
-              type="button"
-              className="primaryBtn"
-              onClick={() => setShowAddEmployee((v) => !v)}
-            >
-              <span className="btnIcon" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12 5v14"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M5 12h14"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </span>
-              Add Employee
-            </button>
-          </section>
+          <EmployeesTab
+            employees={employees}
+            loading={loading}
+            error={error}
+            dashboardLoading={dashboardLoading}
+            dashboardError={dashboardError}
+            dashboardRows={dashboardRows}
+            showAddEmployee={showAddEmployee}
+            setShowAddEmployee={setShowAddEmployee}
+            employeeId={employeeId}
+            setEmployeeId={setEmployeeId}
+            fullName={fullName}
+            setFullName={setFullName}
+            email={email}
+            setEmail={setEmail}
+            department={department}
+            setDepartment={setDepartment}
+            canSubmit={canSubmit}
+            onAdd={onAdd}
+            onDelete={onDelete}
+            goToAttendance={goToAttendance}
+          />
         ) : (
-          <section className="hero">
-            <h1>Mark Attendance</h1>
-            <p className="heroSub">
-              Track daily presence with simple status updates
-            </p>
-          </section>
-        )}
-
-        {tab === "employees" ? (
-          <>
-            <section className="card">
-              <div className="cardHeader">
-                <div className="row">
-                  <div className="pill">
-                    Employees: <strong>{employees.length}</strong>
-                  </div>
-                </div>
-              </div>
-
-              {dashboardLoading ? (
-                <p>Loading summary...</p>
-              ) : dashboardError ? (
-                <p className="error">{dashboardError}</p>
-              ) : dashboardRows.length === 0 ? (
-                <p>No attendance summary yet.</p>
-              ) : (
-                <div className="tableWrap">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Employee ID</th>
-                        <th>Full Name</th>
-                        <th>Department</th>
-                        <th>Present Days</th>
-                        <th>Absent Days</th>
-                        <th>Total Records</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dashboardRows.map((r) => (
-                        <tr key={r.employee_id}>
-                          <td className="mono" data-label="Employee ID">
-                            {r.employee_id}
-                          </td>
-                          <td data-label="Full Name">{r.full_name || "—"}</td>
-                          <td data-label="Department">{r.department || "—"}</td>
-                          <td className="mono" data-label="Present Days">
-                            {r.present_days}
-                          </td>
-                          <td className="mono" data-label="Absent Days">
-                            {r.absent_days}
-                          </td>
-                          <td className="mono" data-label="Total Records">
-                            {r.total_records}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-
-            {showAddEmployee ? (
-              <section className="card">
-                <div className="cardHeader">
-                  <h2>Add Employee</h2>
-                </div>
-
-                <form onSubmit={onAdd} className="form">
-                  <div className="grid2">
-                    <label>
-                      Employee ID
-                      <input
-                        value={employeeId}
-                        onChange={(e) => setEmployeeId(e.target.value)}
-                        placeholder="EMP001"
-                      />
-                    </label>
-                    <label>
-                      Department
-                      <input
-                        value={department}
-                        onChange={(e) => setDepartment(e.target.value)}
-                        placeholder="Engineering"
-                      />
-                    </label>
-                  </div>
-                  <label>
-                    Full Name
-                    <input
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="John Doe"
-                    />
-                  </label>
-                  <label>
-                    Email Address
-                    <input
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="john@example.com"
-                    />
-                  </label>
-
-                  <div className="row">
-                    <button
-                      type="submit"
-                      className="primaryBtn"
-                      disabled={!canSubmit}
-                    >
-                      Save Employee
-                    </button>
-                    <button
-                      type="button"
-                      className="ghostBtn"
-                      onClick={() => setShowAddEmployee(false)}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-
-                {error ? <p className="error">{error}</p> : null}
-              </section>
-            ) : null}
-
-            <section className="card">
-              <div className="cardHeader">
-                <h2>All Employees ({employees.length})</h2>
-              </div>
-              {loading ? (
-                <p>Loading...</p>
-              ) : employees.length === 0 ? (
-                <p>No employees yet. Add your first employee above.</p>
-              ) : (
-                <div className="tableWrap">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Employee ID</th>
-                        <th>Full Name</th>
-                        <th>Email</th>
-                        <th>Department</th>
-                        <th className="actionsCol">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {employees.map((emp) => (
-                        <tr key={emp.employee_id}>
-                          <td className="mono" data-label="Employee ID">
-                            {emp.employee_id}
-                          </td>
-                          <td data-label="Full Name">{emp.full_name}</td>
-                          <td data-label="Email">{emp.email}</td>
-                          <td data-label="Department">{emp.department}</td>
-                          <td
-                            className="actions actionsCol"
-                            data-label="Actions"
-                          >
-                            <div className="actionsWrap">
-                              <button
-                                className="actionBtn"
-                                onClick={() => goToAttendance(emp.employee_id)}
-                                type="button"
-                              >
-                                <span className="btnIcon" aria-hidden="true">
-                                  <svg
-                                    viewBox="0 0 24 24"
-                                    width="18"
-                                    height="18"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinejoin="round"
-                                    />
-                                    <path
-                                      d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                    />
-                                  </svg>
-                                </span>
-                                Attendance
-                              </button>
-                              <button
-                                className="dangerBtn"
-                                onClick={() => onDelete(emp.employee_id)}
-                                type="button"
-                              >
-                                <span className="btnIcon" aria-hidden="true">
-                                  <svg
-                                    viewBox="0 0 24 24"
-                                    width="18"
-                                    height="18"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      d="M3 6h18"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                    />
-                                    <path
-                                      d="M8 6V4h8v2"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinejoin="round"
-                                    />
-                                    <path
-                                      d="M6 6l1 16h10l1-16"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinejoin="round"
-                                    />
-                                    <path
-                                      d="M10 11v6"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                    />
-                                    <path
-                                      d="M14 11v6"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                    />
-                                  </svg>
-                                </span>
-                                Delete
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-          </>
-        ) : (
-          <>
-            <section className="card">
-              <h2>Attendance Management</h2>
-              {employees.length === 0 ? (
-                <p>Add at least one employee to mark attendance.</p>
-              ) : (
-                <form className="form" onSubmit={onMarkAttendance}>
-                  <div className="grid2">
-                    <label>
-                      Employee
-                      <select
-                        value={selectedEmployeeId}
-                        onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                      >
-                        {employees.map((e) => (
-                          <option key={e.employee_id} value={e.employee_id}>
-                            {e.employee_id} — {e.full_name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Date
-                      <input
-                        type="date"
-                        value={attendanceDate}
-                        onChange={(e) => setAttendanceDate(e.target.value)}
-                      />
-                    </label>
-                  </div>
-
-                  <label>
-                    Status
-                    <select
-                      value={attendanceStatus}
-                      onChange={(e) => setAttendanceStatus(e.target.value)}
-                    >
-                      <option value="Present">Present</option>
-                      <option value="Absent">Absent</option>
-                    </select>
-                  </label>
-                  <div className="row">
-                    <button
-                      type="submit"
-                      className="primaryBtn"
-                      disabled={!canMarkAttendance}
-                    >
-                      Mark Attendance
-                    </button>
-                  </div>
-                  {attendanceError ? (
-                    <p className="error">{attendanceError}</p>
-                  ) : null}
-                </form>
-              )}
-            </section>
-
-            <section className="card">
-              <div className="cardHeader">
-                <h2>Attendance Records</h2>
-                <div className="pill">
-                  Present Days (loaded): <strong>{presentDays}</strong>
-                </div>
-              </div>
-
-              <div className="grid2" style={{ marginTop: 12 }}>
-                <label>
-                  From (optional)
-                  <input
-                    type="date"
-                    value={attendanceFilterFrom}
-                    onChange={(e) => setAttendanceFilterFrom(e.target.value)}
-                  />
-                </label>
-                <label>
-                  To (optional)
-                  <input
-                    type="date"
-                    value={attendanceFilterTo}
-                    onChange={(e) => setAttendanceFilterTo(e.target.value)}
-                  />
-                </label>
-              </div>
-              {attendanceFilterFrom || attendanceFilterTo ? (
-                <div className="row" style={{ marginTop: 8 }}>
-                  <button
-                    type="button"
-                    className="ghostBtn"
-                    onClick={() => {
-                      setAttendanceFilterFrom("");
-                      setAttendanceFilterTo("");
-                    }}
-                  >
-                    Remove Filter
-                  </button>
-                </div>
-              ) : null}
-
-              {attendanceLoading ? (
-                <p>Loading...</p>
-              ) : selectedEmployeeId && attendance.length === 0 ? (
-                <p>No attendance records yet.</p>
-              ) : !selectedEmployeeId ? (
-                <p>Select an employee to view attendance.</p>
-              ) : (
-                <div className="tableWrap">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {attendance.map((a) => (
-                        <tr key={`${a.employee_id}-${a.date}`}>
-                          <td className="mono" data-label="Date">
-                            {a.date}
-                          </td>
-                          <td data-label="Status">
-                            <span
-                              className={
-                                a.status === "Present"
-                                  ? "badge ok"
-                                  : "badge bad"
-                              }
-                            >
-                              {a.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-          </>
+          <AttendanceTab
+            employees={employees}
+            selectedEmployeeId={selectedEmployeeId}
+            setSelectedEmployeeId={setSelectedEmployeeId}
+            attendanceDate={attendanceDate}
+            setAttendanceDate={setAttendanceDate}
+            attendanceStatus={attendanceStatus}
+            setAttendanceStatus={setAttendanceStatus}
+            canMarkAttendance={canMarkAttendance}
+            onMarkAttendance={onMarkAttendance}
+            attendanceError={attendanceError}
+            attendance={attendance}
+            attendanceLoading={attendanceLoading}
+            presentDays={presentDays}
+            attendanceFilterFrom={attendanceFilterFrom}
+            setAttendanceFilterFrom={setAttendanceFilterFrom}
+            attendanceFilterTo={attendanceFilterTo}
+            setAttendanceFilterTo={setAttendanceFilterTo}
+          />
         )}
       </main>
     </div>
