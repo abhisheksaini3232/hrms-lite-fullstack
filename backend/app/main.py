@@ -1,11 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 
 from .db import get_db
 from .routes.employees import router as employees_router
 from .settings import settings
 
 app = FastAPI(title="HRMS Lite API")
+
+logger = logging.getLogger("hrms_lite")
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,9 +28,15 @@ async def health():
 async def _startup_indexes():
     db = get_db()
 
-    await db.employees.create_index("employee_id", unique=True)
-    await db.employees.create_index("email", unique=True)
-    await db.attendance.create_index([("employee_id", 1), ("date", 1)], unique=True)
+    try:
+        await db.employees.create_index("employee_id", unique=True)
+        await db.employees.create_index("email", unique=True)
+        await db.attendance.create_index(
+            [("employee_id", 1), ("date", 1)],
+            unique=True,
+        )
+    except Exception as exc:
+        logger.exception("MongoDB index creation failed during startup: %s", exc)
 
 
 app.include_router(employees_router)
