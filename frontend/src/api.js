@@ -62,3 +62,9 @@ export async function getAttendance(employeeId, date) {
   if (!res.ok) throw new Error(await readError(res));
   return res.json();
 }
+
+export async function getDashboardSummary() {
+  const res = await fetch(`${API_URL}/dashboard/summary`);
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}

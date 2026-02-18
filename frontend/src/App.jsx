@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   createEmployee,
   deleteEmployee,
+  getDashboardSummary,
   getAttendance,
   getEmployees,
   markAttendance,
@@ -25,9 +26,14 @@ export default function App() {
     new Date().toISOString().slice(0, 10)
   );
   const [attendanceStatus, setAttendanceStatus] = useState("Present");
+  const [attendanceFilterDate, setAttendanceFilterDate] = useState("");
   const [attendance, setAttendance] = useState([]);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [attendanceError, setAttendanceError] = useState("");
+
+  const [dashboard, setDashboard] = useState(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState("");
 
   const canSubmit = useMemo(() => {
     return (
@@ -58,8 +64,22 @@ export default function App() {
     }
   }
 
+  async function refreshDashboard() {
+    setDashboardLoading(true);
+    setDashboardError("");
+    try {
+      const data = await getDashboardSummary();
+      setDashboard(data);
+    } catch (e) {
+      setDashboardError(e?.message || "Failed to load dashboard");
+    } finally {
+      setDashboardLoading(false);
+    }
+  }
+
   useEffect(() => {
     refresh();
+    refreshDashboard();
   }, []);
 
   async function refreshAttendance(nextEmployeeId = selectedEmployeeId, date = "") {
@@ -81,9 +101,9 @@ export default function App() {
 
   useEffect(() => {
     if (tab !== "attendance") return;
-    refreshAttendance();
+    refreshAttendance(selectedEmployeeId, attendanceFilterDate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, selectedEmployeeId]);
+  }, [tab, selectedEmployeeId, attendanceFilterDate]);
 
   async function onAdd(e) {
     e.preventDefault();
@@ -103,6 +123,7 @@ export default function App() {
       setEmail("");
       setDepartment("");
       setShowAddEmployee(false);
+      refreshDashboard();
     } catch (e) {
       setError(e?.message || "Failed to add employee");
     }
@@ -117,6 +138,7 @@ export default function App() {
         setSelectedEmployeeId("");
         setAttendance([]);
       }
+      refreshDashboard();
     } catch (e) {
       setError(e?.message || "Failed to delete employee");
     }
@@ -136,7 +158,8 @@ export default function App() {
         date: attendanceDate,
         status: attendanceStatus,
       });
-      await refreshAttendance(selectedEmployeeId);
+      await refreshAttendance(selectedEmployeeId, attendanceFilterDate);
+      refreshDashboard();
     } catch (e) {
       setAttendanceError(e?.message || "Failed to mark attendance");
     }
@@ -145,6 +168,11 @@ export default function App() {
   const presentDays = useMemo(() => {
     return attendance.filter((a) => a.status === "Present").length;
   }, [attendance]);
+
+  const dashboardRows = useMemo(() => {
+    if (!dashboard?.per_employee) return [];
+    return dashboard.per_employee;
+  }, [dashboard]);
 
   return (
     <div className="app">
@@ -229,6 +257,52 @@ export default function App() {
 
       {tab === "employees" ? (
         <>
+          <section className="card">
+            <div className="cardHeader">
+              <h2>Dashboard</h2>
+              <div className="row">
+                <div className="pill">Employees: <strong>{employees.length}</strong></div>
+                <div className="pill">Present records: <strong>{dashboard?.present_total ?? "—"}</strong></div>
+                <div className="pill">Absent records: <strong>{dashboard?.absent_total ?? "—"}</strong></div>
+              </div>
+            </div>
+
+            {dashboardLoading ? (
+              <p>Loading summary...</p>
+            ) : dashboardError ? (
+              <p className="error">{dashboardError}</p>
+            ) : dashboardRows.length === 0 ? (
+              <p>No attendance summary yet.</p>
+            ) : (
+              <div className="tableWrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Employee ID</th>
+                      <th>Full Name</th>
+                      <th>Department</th>
+                      <th>Present Days</th>
+                      <th>Absent Days</th>
+                      <th>Total Records</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dashboardRows.map((r) => (
+                      <tr key={r.employee_id}>
+                        <td className="mono">{r.employee_id}</td>
+                        <td>{r.full_name || "—"}</td>
+                        <td>{r.department || "—"}</td>
+                        <td className="mono">{r.present_days}</td>
+                        <td className="mono">{r.absent_days}</td>
+                        <td className="mono">{r.total_records}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
           {showAddEmployee ? (
             <section className="card">
               <div className="cardHeader">
@@ -388,6 +462,27 @@ export default function App() {
                     />
                   </label>
                 </div>
+
+                <div className="grid2">
+                  <label>
+                    Filter Records by Date (optional)
+                    <input
+                      type="date"
+                      value={attendanceFilterDate}
+                      onChange={(e) => setAttendanceFilterDate(e.target.value)}
+                    />
+                  </label>
+                  <div className="row" style={{ alignSelf: "end" }}>
+                    <button
+                      type="button"
+                      className="ghostBtn"
+                      onClick={() => setAttendanceFilterDate("")}
+                      disabled={!attendanceFilterDate}
+                    >
+                      Clear Filter
+                    </button>
+                  </div>
+                </div>
                 <label>
                   Status
                   <select
@@ -412,7 +507,7 @@ export default function App() {
             <div className="cardHeader">
               <h2>Attendance Records</h2>
               <div className="pill">
-                Total Present Days: <strong>{presentDays}</strong>
+                Present Days (loaded): <strong>{presentDays}</strong>
               </div>
             </div>
 
