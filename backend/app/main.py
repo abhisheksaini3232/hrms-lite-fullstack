@@ -10,10 +10,14 @@ app = FastAPI(title="HRMS Lite API")
 
 logger = logging.getLogger("hrms_lite")
 
+_cors_origins = settings.cors_origin_list()
+_cors_has_wildcard = any(o == "*" for o in _cors_origins)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origin_list(),
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    # If you use "*" origins, you must NOT allow credentials per CORS rules.
+    allow_credentials=False if _cors_has_wildcard else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

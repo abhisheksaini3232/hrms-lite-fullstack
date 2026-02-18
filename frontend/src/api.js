@@ -1,5 +1,6 @@
-const API_URL =
-  import.meta.env.VITE_API_URL || "https://hrms-lite-fullstack-cqgp.onrender.com";
+const API_URL = (
+  import.meta.env.VITE_API_URL || "https://hrms-lite-fullstack-cqgp.onrender.com"
+).toString().trim().replace(/\/+$/, "");
 
 async function readError(res) {
   try {
