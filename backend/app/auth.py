@@ -122,23 +122,33 @@ async def get_current_user(
 
 
 def require_roles(*allowed_roles: str):
-    """Dependency factory to enforce that the current user has one of the given roles.
+    """TEMPORARY: authentication disabled.
 
-    Usage in routes:
+    The original implementation enforced that the current user had one of the
+    allowed roles using JWT auth and `get_current_user`:
 
-        @router.get("/something")
-        async def endpoint(current_user=Depends(require_roles("HR", "Admin"))):
-            ...
+        async def _dependency(current_user=Depends(get_current_user)):
+            role = current_user.get("role") or "HR"
+            if role not in allowed_roles:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Not enough permissions for this action",
+                )
+            return current_user
+
+    For now we bypass auth entirely and always return a demo HR user so that
+    the app can be used without logging in. To restore auth later, replace the
+    body of this function with the commented implementation above.
     """
 
-    async def _dependency(current_user=Depends(get_current_user)):
-        role = current_user.get("role") or "HR"
-        if role not in allowed_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not enough permissions for this action",
-            )
-        return current_user
+    async def _dependency():
+        return {
+            "_id": "demo-hr",
+            "username": "Demo HR",
+            "email": "demo@example.com",
+            "role": "HR",
+            "created_at": datetime.utcnow(),
+        }
 
     return _dependency
 

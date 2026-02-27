@@ -9,9 +9,9 @@ import {
   getAttendance,
   getEmployees,
   markAttendance,
-  registerUser,
-  loginUser,
-  getCurrentUser,
+  // registerUser,
+  // loginUser,
+  // getCurrentUser,
   getMyProfile,
   getMyAttendance,
   markMyAttendance,
@@ -20,14 +20,23 @@ import {
 } from "./api.js";
 
 export default function App() {
-  const [authMode, setAuthMode] = useState("login"); // 'login' | 'register'
-  const [authName, setAuthName] = useState("");
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [authError, setAuthError] = useState("");
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authRole, setAuthRole] = useState("HR");
-  const [user, setUser] = useState(null);
+  // Authentication is temporarily disabled. The state and logic for
+  // login/registration are kept here in comments so they can be
+  // restored easily once backend auth is stable.
+  // const [authMode, setAuthMode] = useState("login"); // 'login' | 'register'
+  // const [authName, setAuthName] = useState("");
+  // const [authEmail, setAuthEmail] = useState("");
+  // const [authPassword, setAuthPassword] = useState("");
+  // const [authError, setAuthError] = useState("");
+  // const [authLoading, setAuthLoading] = useState(false);
+  // const [authRole, setAuthRole] = useState("HR");
+  // const [user, setUser] = useState(null);
+  const [user] = useState({
+    id: "demo-hr",
+    username: "Demo HR",
+    email: "demo@example.com",
+    role: "HR",
+  });
 
   const [tab, setTab] = useState("employees");
   const [showAddEmployee, setShowAddEmployee] = useState(false);
@@ -74,7 +83,7 @@ export default function App() {
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState("");
 
-  const isAuthenticated = !!user;
+  const isAuthenticated = true; // auth disabled
   const userRole = user?.role || "HR";
 
   const canSubmit = useMemo(() => {
@@ -92,20 +101,21 @@ export default function App() {
     );
   }, [selectedEmployeeId, attendanceDate]);
 
-  useEffect(() => {
-    async function bootstrapAuth() {
-      try {
-        const token = window.localStorage.getItem("hrms_token");
-        if (!token) return;
-        const me = await getCurrentUser();
-        setUser(me);
-      } catch {
-        window.localStorage.removeItem("hrms_token");
-        setUser(null);
-      }
-    }
-    bootstrapAuth();
-  }, []);
+  // Auth bootstrap (disabled for now – we always use the demo HR user)
+  // useEffect(() => {
+  //   async function bootstrapAuth() {
+  //     try {
+  //       const token = window.localStorage.getItem("hrms_token");
+  //       if (!token) return;
+  //       const me = await getCurrentUser();
+  //       setUser(me);
+  //     } catch {
+  //       window.localStorage.removeItem("hrms_token");
+  //       setUser(null);
+  //     }
+  //   }
+  //   bootstrapAuth();
+  // }, []);
 
   useEffect(() => {
     if (!isAuthenticated || userRole !== "Employee") return;
@@ -201,66 +211,13 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, selectedEmployeeId, attendanceFilterFrom, attendanceFilterTo]);
 
-  async function handleAuthSubmit(e) {
-    e.preventDefault();
-    setAuthError("");
-
-    const trimmedName = authName.trim();
-    const trimmedEmail = authEmail.trim();
-    if (authMode === "register") {
-      if (!trimmedName) {
-        setAuthError("Please enter your name.");
-        return;
-      }
-      if (!trimmedEmail || !trimmedEmail.includes("@")) {
-        setAuthError("Please enter a valid work email.");
-        return;
-      }
-    } else {
-      if (!trimmedEmail) {
-        setAuthError("Please enter your email or username.");
-        return;
-      }
-    }
-    if (!authPassword || authPassword.length < 6) {
-      setAuthError("Password must be at least 6 characters.");
-      return;
-    }
-
-    setAuthLoading(true);
-    try {
-      let result;
-      if (authMode === "register") {
-        result = await registerUser({
-          username: trimmedName,
-          email: trimmedEmail,
-          password: authPassword,
-          role: authRole,
-        });
-      } else {
-        result = await loginUser({
-          identifier: trimmedEmail,
-          password: authPassword,
-        });
-      }
-      window.localStorage.setItem("hrms_token", result.access_token);
-      const me = await getCurrentUser();
-      setUser(me);
-      setAuthPassword("");
-      setAuthError("");
-    } catch (e2) {
-      setAuthError(e2?.message || "Authentication failed");
-    } finally {
-      setAuthLoading(false);
-    }
-  }
+  // Auth submit + logout handlers are disabled for now.
+  // async function handleAuthSubmit(e) { ... }
+  // function handleLogout() { ... }
 
   function handleLogout() {
-    window.localStorage.removeItem("hrms_token");
-    setUser(null);
-    setEmployees([]);
-    setDashboard(null);
-    setAttendance([]);
+    // With auth disabled there's nothing to clear; keep placeholder
+    // so Topbar can still call onLogout without crashing.
   }
 
   async function onAdd(e) {
@@ -418,107 +375,10 @@ export default function App() {
     loadAdmin();
   }, [userRole, tab, adminSelectedHrId]);
 
-  if (!isAuthenticated) {
-    return (
-      <div className="app appAuth">
-        <div className="authShell">
-          <div className="authIntro">
-            <h1>HR Workspace</h1>
-            <p>
-              Sign in or create an HR account to manage your own employees and
-              attendance data in an isolated workspace.
-            </p>
-          </div>
-          <div className="authCard">
-            <div className="authTabs">
-              <button
-                type="button"
-                className={authMode === "login" ? "authTab active" : "authTab"}
-                onClick={() => {
-                  setAuthMode("login");
-                  setAuthError("");
-                }}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                className={
-                  authMode === "register" ? "authTab active" : "authTab"
-                }
-                onClick={() => {
-                  setAuthMode("register");
-                  setAuthError("");
-                }}
-              >
-                Create Account
-              </button>
-            </div>
-            <form className="authForm" onSubmit={handleAuthSubmit}>
-              {authMode === "register" ? (
-                <label>
-                  Name
-                  <input
-                    type="text"
-                    value={authName}
-                    onChange={(e) => setAuthName(e.target.value)}
-                    placeholder="Alex Johnson"
-                  />
-                </label>
-              ) : null}
-              <label>
-                {authMode === "login" ? "Email or Username" : "Work Email"}
-                <input
-                  type={authMode === "login" ? "text" : "email"}
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                  placeholder={
-                    authMode === "login"
-                      ? "you@company.com or username"
-                      : "you@company.com"
-                  }
-                />
-              </label>
-              <label>
-                Password
-                <input
-                  type="password"
-                  value={authPassword}
-                  onChange={(e) => setAuthPassword(e.target.value)}
-                  placeholder="••••••••"
-                />
-              </label>
-              {authMode === "register" ? (
-                <label>
-                  Role
-                  <select
-                    value={authRole}
-                    onChange={(e) => setAuthRole(e.target.value)}
-                  >
-                    <option value="HR">HR</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Employee">Employee</option>
-                  </select>
-                </label>
-              ) : null}
-              {authError ? <p className="authError">{authError}</p> : null}
-              <button
-                type="submit"
-                className="primaryBtn fullWidth"
-                disabled={authLoading}
-              >
-                {authLoading
-                  ? "Please wait..."
-                  : authMode === "login"
-                    ? "Sign In"
-                    : "Create HR Account"}
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Auth screen is disabled; we always render the main app as the
+  // demo HR user. To restore, uncomment this block and related
+  // auth state/handlers above.
+  // if (!isAuthenticated) { ... }
 
   // Employee role: show a limited portal instead of the management console.
   if (userRole === "Employee") {

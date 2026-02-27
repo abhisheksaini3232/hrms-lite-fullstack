@@ -6,21 +6,14 @@ const API_URL = (
   .trim()
   .replace(/\/+$/, "");
 
-function getAuthToken() {
-  try {
-    return window.localStorage.getItem("hrms_token") || "";
-  } catch {
-    return "";
-  }
-}
+// NOTE: Authentication temporarily disabled.
+// The helpers below no longer send an Authorization header.
+// When you want to restore login, replace this `withAuth` helper
+// with the original version that read `hrms_token` from
+// localStorage and attached a `Bearer` token.
 
 function withAuth(headers = {}) {
-  const token = getAuthToken();
-  if (!token) return headers;
-  return {
-    ...headers,
-    Authorization: `Bearer ${token}`,
-  };
+  return headers;
 }
 
 async function readError(res) {
