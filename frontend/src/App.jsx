@@ -144,6 +144,11 @@ export default function App() {
           role: me.role,
           createdAt: me.created_at,
         });
+        if (me.role === "Admin") {
+          setTab("admin");
+        } else {
+          setTab("employees");
+        }
       } catch {
         try {
           window.localStorage.removeItem("hrms_token");
@@ -275,6 +280,11 @@ export default function App() {
         role: me.role,
         createdAt: me.created_at,
       });
+      if (me.role === "Admin") {
+        setTab("admin");
+      } else {
+        setTab("employees");
+      }
       setAuthPassword("");
       setAuthError("");
     } catch (err) {
@@ -413,7 +423,7 @@ export default function App() {
   }, [dashboard]);
 
   useEffect(() => {
-    if (userRole !== "Admin" || tab !== "admin") return;
+    if (userRole !== "Admin") return;
     if (!adminSelectedHrId || !adminAttendanceEmployeeId) {
       setAdminAttendance([]);
       return;
@@ -439,10 +449,10 @@ export default function App() {
     }
 
     loadAdminAttendance();
-  }, [userRole, tab, adminSelectedHrId, adminAttendanceEmployeeId]);
+  }, [userRole, adminSelectedHrId, adminAttendanceEmployeeId]);
 
   useEffect(() => {
-    if (userRole !== "Admin" || tab !== "admin") return;
+    if (userRole !== "Admin") return;
 
     async function loadAdmin() {
       setAdminLoading(true);
@@ -475,7 +485,7 @@ export default function App() {
     }
 
     loadAdmin();
-  }, [userRole, tab, adminSelectedHrId]);
+  }, [userRole, adminSelectedHrId]);
 
   if (!isAuthenticated) {
     return (
@@ -731,60 +741,17 @@ export default function App() {
     );
   }
 
-  return (
-    <div className="app appDashboard">
-      <Topbar
-        tab={tab}
-        onTabChange={setTab}
-        user={user}
-        onLogout={handleLogout}
-      />
+  if (userRole === "Admin") {
+    return (
+      <div className="app appDashboard">
+        <Topbar
+          tab={tab}
+          onTabChange={setTab}
+          user={user}
+          onLogout={handleLogout}
+        />
 
-      <main className="layoutShell">
-        {tab === "employees" ? (
-          <EmployeesTab
-            employees={employees}
-            loading={loading}
-            error={error}
-            dashboardLoading={dashboardLoading}
-            dashboardError={dashboardError}
-            dashboardRows={dashboardRows}
-            showAddEmployee={showAddEmployee}
-            setShowAddEmployee={setShowAddEmployee}
-            employeeId={employeeId}
-            setEmployeeId={setEmployeeId}
-            fullName={fullName}
-            setFullName={setFullName}
-            email={email}
-            setEmail={setEmail}
-            department={department}
-            setDepartment={setDepartment}
-            canSubmit={canSubmit}
-            onAdd={onAdd}
-            onDelete={onDelete}
-            goToAttendance={goToAttendance}
-          />
-        ) : tab === "attendance" ? (
-          <AttendanceTab
-            employees={employees}
-            selectedEmployeeId={selectedEmployeeId}
-            setSelectedEmployeeId={setSelectedEmployeeId}
-            attendanceDate={attendanceDate}
-            setAttendanceDate={setAttendanceDate}
-            attendanceStatus={attendanceStatus}
-            setAttendanceStatus={setAttendanceStatus}
-            canMarkAttendance={canMarkAttendance}
-            onMarkAttendance={onMarkAttendance}
-            attendanceError={attendanceError}
-            attendance={attendance}
-            attendanceLoading={attendanceLoading}
-            presentDays={presentDays}
-            attendanceFilterFrom={attendanceFilterFrom}
-            setAttendanceFilterFrom={setAttendanceFilterFrom}
-            attendanceFilterTo={attendanceFilterTo}
-            setAttendanceFilterTo={setAttendanceFilterTo}
-          />
-        ) : userRole === "Admin" ? (
+        <main className="layoutShell">
           <section className="pane">
             <header className="paneHeader">
               <div>
@@ -1012,7 +979,65 @@ export default function App() {
               </article>
             </div>
           </section>
-        ) : null}
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app appDashboard">
+      <Topbar
+        tab={tab}
+        onTabChange={setTab}
+        user={user}
+        onLogout={handleLogout}
+      />
+
+      <main className="layoutShell">
+        {tab === "employees" ? (
+          <EmployeesTab
+            employees={employees}
+            loading={loading}
+            error={error}
+            dashboardLoading={dashboardLoading}
+            dashboardError={dashboardError}
+            dashboardRows={dashboardRows}
+            showAddEmployee={showAddEmployee}
+            setShowAddEmployee={setShowAddEmployee}
+            employeeId={employeeId}
+            setEmployeeId={setEmployeeId}
+            fullName={fullName}
+            setFullName={setFullName}
+            email={email}
+            setEmail={setEmail}
+            department={department}
+            setDepartment={setDepartment}
+            canSubmit={canSubmit}
+            onAdd={onAdd}
+            onDelete={onDelete}
+            goToAttendance={goToAttendance}
+          />
+        ) : (
+          <AttendanceTab
+            employees={employees}
+            selectedEmployeeId={selectedEmployeeId}
+            setSelectedEmployeeId={setSelectedEmployeeId}
+            attendanceDate={attendanceDate}
+            setAttendanceDate={setAttendanceDate}
+            attendanceStatus={attendanceStatus}
+            setAttendanceStatus={setAttendanceStatus}
+            canMarkAttendance={canMarkAttendance}
+            onMarkAttendance={onMarkAttendance}
+            attendanceError={attendanceError}
+            attendance={attendance}
+            attendanceLoading={attendanceLoading}
+            presentDays={presentDays}
+            attendanceFilterFrom={attendanceFilterFrom}
+            setAttendanceFilterFrom={setAttendanceFilterFrom}
+            attendanceFilterTo={attendanceFilterTo}
+            setAttendanceFilterTo={setAttendanceFilterTo}
+          />
+        )}
       </main>
     </div>
   );

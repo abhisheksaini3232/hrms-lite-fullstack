@@ -39,7 +39,7 @@ _EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
 @router.get("", response_model=list[EmployeeOut])
-async def list_employees(current_user=Depends(require_roles("HR", "Admin"))):
+async def list_employees(current_user=Depends(require_roles("HR"))):
     db = get_db()
     cursor = (
         db.employees.find({"owner_id": current_user["_id"]})
@@ -53,7 +53,7 @@ async def list_employees(current_user=Depends(require_roles("HR", "Admin"))):
 @router.post("", response_model=EmployeeOut, status_code=status.HTTP_201_CREATED)
 async def create_employee(
     payload: EmployeeCreate,
-    current_user=Depends(require_roles("HR", "Admin")),
+    current_user=Depends(require_roles("HR")),
 ):
     db = get_db()
 
@@ -98,7 +98,7 @@ async def create_employee(
 @router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_employee(
     employee_id: str,
-    current_user=Depends(require_roles("HR", "Admin")),
+    current_user=Depends(require_roles("HR")),
 ):
     db = get_db()
 
@@ -123,7 +123,7 @@ async def delete_employee(
 async def mark_attendance(
     employee_id: str,
     payload: AttendanceCreate,
-    current_user=Depends(require_roles("HR", "Admin")),
+    current_user=Depends(require_roles("HR")),
 ):
     db = get_db()
 
@@ -132,6 +132,15 @@ async def mark_attendance(
     )
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
+
+    # HR can only mark attendance for today's date; editing past or
+    # future records is reserved for Admin via the admin endpoints.
+    today = date.today()
+    if payload.date != today:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="HR can only mark attendance for today's date",
+        )
 
     date_str = _date_to_str(payload.date)
     doc_filter = {
@@ -164,7 +173,7 @@ async def list_attendance(
         default=None,
         description="Filter range end (YYYY-MM-DD)",
     ),
-    current_user=Depends(require_roles("HR", "Admin")),
+    current_user=Depends(require_roles("HR")),
 ):
     db = get_db()
 

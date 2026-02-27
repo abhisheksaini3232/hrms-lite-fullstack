@@ -9,14 +9,10 @@ export default function Topbar({ tab, onTabChange, user, onLogout }) {
           <span>HR</span>
         </div>
         <div className="topbarText">
-          <strong>HR Workspace</strong>
+          <strong>{role === "Admin" ? "Admin Console" : "HR Workspace"}</strong>
           <span>
             {role === "Admin"
-              ? tab === "admin"
-                ? "Admin Overview"
-                : tab === "employees"
-                  ? "People Console"
-                  : "Attendance Console"
+              ? "Review HR accounts and employee attendance"
               : tab === "employees"
                 ? "People Console"
                 : "Attendance Console"}
@@ -25,7 +21,7 @@ export default function Topbar({ tab, onTabChange, user, onLogout }) {
       </div>
 
       <div className="topbarRight">
-        {role !== "Employee" ? (
+        {role === "HR" ? (
           <nav className="topbarNav" aria-label="Primary">
             <button
               type="button"
@@ -45,15 +41,6 @@ export default function Topbar({ tab, onTabChange, user, onLogout }) {
             >
               Attendance
             </button>
-            {role === "Admin" ? (
-              <button
-                type="button"
-                className={tab === "admin" ? "topbarLink active" : "topbarLink"}
-                onClick={() => onTabChange("admin")}
-              >
-                Admin
-              </button>
-            ) : null}
           </nav>
         ) : null}
 
