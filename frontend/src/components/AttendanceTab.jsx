@@ -20,30 +20,33 @@ export default function AttendanceTab({
   setAttendanceFilterTo,
 }) {
   return (
-    <>
-      <section className="hero">
-        <h1>Mark Attendance</h1>
-        <p className="heroSub">
-          Track daily presence with simple status updates
-        </p>
-      </section>
+    <div className="pane">
+      <header className="paneHeader">
+        <div>
+          <h1 className="paneTitle">Attendance board</h1>
+          <p className="paneSubtitle">Mark and review presence for employees in this HR workspace.</p>
+        </div>
+      </header>
 
-      <section className="card">
-        <h2>Attendance Management</h2>
+      <section className="surface">
+        <div className="surfaceHeader">
+          <h2>Mark attendance</h2>
+        </div>
         {employees.length === 0 ? (
-          <p>Add at least one employee to mark attendance.</p>
+          <p className="muted">Add at least one employee before marking attendance.</p>
         ) : (
-          <form className="form" onSubmit={onMarkAttendance}>
-            <div className="grid2">
+          <form className="formGrid" onSubmit={onMarkAttendance}>
+            <div className="fieldRow">
               <label>
                 Employee
                 <select
                   value={selectedEmployeeId}
                   onChange={(e) => setSelectedEmployeeId(e.target.value)}
                 >
+                  <option value="">Choose an employee…</option>
                   {employees.map((e) => (
                     <option key={e.employee_id} value={e.employee_id}>
-                      {e.employee_id} — {e.full_name}
+                      {e.full_name} ({e.employee_id})
                     </option>
                   ))}
                 </select>
@@ -68,31 +71,29 @@ export default function AttendanceTab({
                 <option value="Absent">Absent</option>
               </select>
             </label>
-            <div className="row">
+            <div className="buttonRow">
               <button
                 type="submit"
                 className="primaryBtn"
                 disabled={!canMarkAttendance}
               >
-                Mark Attendance
+                Save status
               </button>
             </div>
             {attendanceError ? (
-              <p className="error">{attendanceError}</p>
+              <p className="dangerText">{attendanceError}</p>
             ) : null}
           </form>
         )}
       </section>
 
-      <section className="card">
-        <div className="cardHeader">
-          <h2>Attendance Records</h2>
-          <div className="pill">
-            Present Days (loaded): <strong>{presentDays}</strong>
-          </div>
+      <section className="surface">
+        <div className="surfaceHeader">
+          <h2>History</h2>
+          <span className="chip">Present days loaded: {presentDays}</span>
         </div>
 
-        <div className="grid2" style={{ marginTop: 12 }}>
+        <div className="fieldRow" style={{ marginTop: 8 }}>
           <label>
             From (optional)
             <input
@@ -112,7 +113,7 @@ export default function AttendanceTab({
         </div>
 
         {attendanceFilterFrom || attendanceFilterTo ? (
-          <div className="row" style={{ marginTop: 8 }}>
+          <div className="buttonRow" style={{ marginTop: 8 }}>
             <button
               type="button"
               className="ghostBtn"
@@ -121,20 +122,20 @@ export default function AttendanceTab({
                 setAttendanceFilterTo("");
               }}
             >
-              Remove Filter
+              Clear date filter
             </button>
           </div>
         ) : null}
 
         {attendanceLoading ? (
-          <p>Loading...</p>
+          <p className="muted">Loading…</p>
         ) : selectedEmployeeId && attendance.length === 0 ? (
-          <p>No attendance records yet.</p>
+          <p className="muted">No attendance records yet for this employee.</p>
         ) : !selectedEmployeeId ? (
-          <p>Select an employee to view attendance.</p>
+          <p className="muted">Select an employee to see their history.</p>
         ) : (
-          <div className="tableWrap">
-            <table className="table">
+          <div className="tableScroller">
+            <table className="dataTable">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -148,11 +149,7 @@ export default function AttendanceTab({
                       {a.date}
                     </td>
                     <td data-label="Status">
-                      <span
-                        className={
-                          a.status === "Present" ? "badge ok" : "badge bad"
-                        }
-                      >
+                      <span className={a.status === "Present" ? "pillOk" : "pillBad"}>
                         {a.status}
                       </span>
                     </td>
@@ -163,6 +160,6 @@ export default function AttendanceTab({
           </div>
         )}
       </section>
-    </>
+    </div>
   );
 }
