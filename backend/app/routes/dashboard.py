@@ -31,6 +31,18 @@ async def dashboard_summary(current_user=Depends(require_roles("HR", "Admin"))):
     pipeline = []
     if not is_admin:
         pipeline.append({"$match": {"owner_id": current_user["_id"]}})
+
+    # For HR users, we must scope attendance lookups by the same owner_id
+    # to avoid mixing records from other HR accounts.
+    attendance_match_expr: dict = {"$eq": ["$employee_id", "$$eid"]}
+    if not is_admin:
+        attendance_match_expr = {
+            "$and": [
+                {"$eq": ["$employee_id", "$$eid"]},
+                {"$eq": ["$owner_id", current_user["_id"]]},
+            ]
+        }
+
     pipeline.extend(
         [
             {"$sort": {"created_at": -1}},
@@ -40,7 +52,7 @@ async def dashboard_summary(current_user=Depends(require_roles("HR", "Admin"))):
                     "from": "attendance",
                     "let": {"eid": "$employee_id"},
                     "pipeline": [
-                        {"$match": {"$expr": {"$eq": ["$employee_id", "$$eid"]}}},
+                        {"$match": {"$expr": attendance_match_expr}},
                         {
                             "$group": {
                                 "_id": None,

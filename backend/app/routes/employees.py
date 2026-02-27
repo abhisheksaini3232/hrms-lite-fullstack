@@ -199,19 +199,24 @@ async def list_attendance(
 
 @router.get("/me/profile", response_model=EmployeeOut)
 async def get_my_profile(current_user=Depends(require_roles("Employee"))):
-    """Return the employee profile that matches the logged-in Employee user.
+    """Return the employee profile linked to the logged-in Employee user.
 
-    We look up the employee record by the user's email. This assumes
-    that the employee's email in HR records matches the login email.
+    Prefer the explicit `user_id` link set during employee signup, and
+    fall back to matching by email for any legacy records.
     """
 
     db = get_db()
-    employee = await db.employees.find_one({"email": current_user["email"]})
+
+    employee = await db.employees.find_one({"user_id": current_user["_id"]})
+    if not employee:
+        employee = await db.employees.find_one({"email": current_user["email"]})
+
     if not employee:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Employee record not found for this account",
         )
+
     return _doc_to_employee(employee)
 
 
@@ -231,12 +236,16 @@ async def get_my_attendance(
     """Return attendance history for the logged-in Employee user's record.
 
     This mirrors list_attendance, but derives the employee from the
-    authenticated user's email instead of a path parameter.
+    authenticated user's linked employee document instead of a path
+    parameter.
     """
 
     db = get_db()
 
-    employee = await db.employees.find_one({"email": current_user["email"]})
+    employee = await db.employees.find_one({"user_id": current_user["_id"]})
+    if not employee:
+        employee = await db.employees.find_one({"email": current_user["email"]})
+
     if not employee:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -245,8 +254,10 @@ async def get_my_attendance(
 
     query: dict[str, object] = {
         "employee_id": employee["employee_id"],
-        "owner_id": employee.get("owner_id"),
     }
+    owner_id = employee.get("owner_id")
+    if owner_id is not None:
+        query["owner_id"] = owner_id
     if date:
         query["date"] = date
     else:
@@ -289,7 +300,10 @@ async def mark_my_attendance(
 
     db = get_db()
 
-    employee = await db.employees.find_one({"email": current_user["email"]})
+    employee = await db.employees.find_one({"user_id": current_user["_id"]})
+    if not employee:
+        employee = await db.employees.find_one({"email": current_user["email"]})
+
     if not employee:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

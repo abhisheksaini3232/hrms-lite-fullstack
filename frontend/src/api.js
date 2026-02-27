@@ -192,3 +192,44 @@ export async function getHrEmployees(hrId) {
   if (!res.ok) throw new Error(await readError(res));
   return res.json();
 }
+
+export async function adminGetAttendance(hrId, employeeId, filters) {
+  const url = new URL(
+    `${API_URL}/admin/hrs/${encodeURIComponent(
+      hrId,
+    )}/employees/${encodeURIComponent(employeeId)}/attendance`,
+  );
+
+  if (typeof filters === "string") {
+    if (filters) url.searchParams.set("date", filters);
+  } else if (filters) {
+    const date = filters.date;
+    const dateFrom = filters.from;
+    const dateTo = filters.to;
+
+    if (date) url.searchParams.set("date", date);
+    if (dateFrom) url.searchParams.set("date_from", dateFrom);
+    if (dateTo) url.searchParams.set("date_to", dateTo);
+  }
+
+  const res = await fetch(url.toString(), {
+    headers: withAuth(),
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+export async function adminMarkAttendance(hrId, employeeId, payload) {
+  const res = await fetch(
+    `${API_URL}/admin/hrs/${encodeURIComponent(
+      hrId,
+    )}/employees/${encodeURIComponent(employeeId)}/attendance`,
+    {
+      method: "POST",
+      headers: withAuth({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}

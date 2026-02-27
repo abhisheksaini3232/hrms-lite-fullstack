@@ -17,6 +17,8 @@ import {
   registerUser,
   loginUser,
   getCurrentUser,
+  adminGetAttendance,
+  adminMarkAttendance,
 } from "./api.js";
 
 export default function App() {
@@ -72,6 +74,15 @@ export default function App() {
   const [adminHrEmployees, setAdminHrEmployees] = useState([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState("");
+  const [adminAttendanceEmployeeId, setAdminAttendanceEmployeeId] =
+    useState("");
+  const [adminAttendanceDate, setAdminAttendanceDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const [adminAttendanceStatus, setAdminAttendanceStatus] = useState("Present");
+  const [adminAttendance, setAdminAttendance] = useState([]);
+  const [adminAttendanceLoading, setAdminAttendanceLoading] = useState(false);
+  const [adminAttendanceError, setAdminAttendanceError] = useState("");
 
   const isAuthenticated = !!user;
   const userRole = user?.role || "HR";
@@ -400,6 +411,35 @@ export default function App() {
     if (!dashboard?.per_employee) return [];
     return dashboard.per_employee;
   }, [dashboard]);
+
+  useEffect(() => {
+    if (userRole !== "Admin" || tab !== "admin") return;
+    if (!adminSelectedHrId || !adminAttendanceEmployeeId) {
+      setAdminAttendance([]);
+      return;
+    }
+
+    async function loadAdminAttendance() {
+      setAdminAttendanceLoading(true);
+      setAdminAttendanceError("");
+      try {
+        const records = await adminGetAttendance(
+          adminSelectedHrId,
+          adminAttendanceEmployeeId,
+          {},
+        );
+        setAdminAttendance(records);
+      } catch (e) {
+        setAdminAttendanceError(
+          e?.message || "Failed to load attendance for this employee",
+        );
+      } finally {
+        setAdminAttendanceLoading(false);
+      }
+    }
+
+    loadAdminAttendance();
+  }, [userRole, tab, adminSelectedHrId, adminAttendanceEmployeeId]);
 
   useEffect(() => {
     if (userRole !== "Admin" || tab !== "admin") return;
@@ -828,7 +868,19 @@ export default function App() {
                       </thead>
                       <tbody>
                         {adminHrEmployees.map((emp) => (
-                          <tr key={emp.employee_id}>
+                          <tr
+                            key={emp.employee_id}
+                            onClick={() =>
+                              setAdminAttendanceEmployeeId(emp.employee_id)
+                            }
+                            style={{
+                              cursor: "pointer",
+                              backgroundColor:
+                                adminAttendanceEmployeeId === emp.employee_id
+                                  ? "rgba(148, 163, 184, 0.12)"
+                                  : "transparent",
+                            }}
+                          >
                             <td>{emp.employee_id}</td>
                             <td>{emp.full_name}</td>
                             <td>{emp.email}</td>
@@ -838,6 +890,124 @@ export default function App() {
                       </tbody>
                     </table>
                   </div>
+                )}
+              </article>
+              <article className="surface">
+                <div className="surfaceHeader">
+                  <div>
+                    <h2>Attendance editor</h2>
+                    <p>
+                      As Admin you can view and update attendance for any date
+                      for the selected employee.
+                    </p>
+                  </div>
+                </div>
+                {!adminSelectedHrId || !adminAttendanceEmployeeId ? (
+                  <p>
+                    Select an HR account and an employee to manage attendance.
+                  </p>
+                ) : (
+                  <>
+                    <form
+                      className="rowInline"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        setAdminAttendanceError("");
+                        try {
+                          await adminMarkAttendance(
+                            adminSelectedHrId,
+                            adminAttendanceEmployeeId,
+                            {
+                              date: adminAttendanceDate,
+                              status: adminAttendanceStatus,
+                            },
+                          );
+                          const records = await adminGetAttendance(
+                            adminSelectedHrId,
+                            adminAttendanceEmployeeId,
+                            {},
+                          );
+                          setAdminAttendance(records);
+                        } catch (err) {
+                          setAdminAttendanceError(
+                            err?.message ||
+                              "Failed to update attendance for this employee",
+                          );
+                        }
+                      }}
+                    >
+                      <div>
+                        <p className="statLabel">Employee</p>
+                        <p className="statValue">{adminAttendanceEmployeeId}</p>
+                      </div>
+                      <label>
+                        <span className="statLabel">Date</span>
+                        <input
+                          type="date"
+                          value={adminAttendanceDate}
+                          onChange={(e) =>
+                            setAdminAttendanceDate(e.target.value)
+                          }
+                        />
+                      </label>
+                      <label>
+                        <span className="statLabel">Status</span>
+                        <select
+                          value={adminAttendanceStatus}
+                          onChange={(e) =>
+                            setAdminAttendanceStatus(e.target.value)
+                          }
+                        >
+                          <option value="Present">Present</option>
+                          <option value="Absent">Absent</option>
+                        </select>
+                      </label>
+                      <button type="submit" className="primaryBtn">
+                        Save attendance
+                      </button>
+                    </form>
+                    {adminAttendanceError ? (
+                      <p className="authError">{adminAttendanceError}</p>
+                    ) : null}
+                    <div className="tableScroller">
+                      <table className="dataTable">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {adminAttendanceLoading ? (
+                            <tr>
+                              <td colSpan={2}>Loading attendance…</td>
+                            </tr>
+                          ) : adminAttendance.length === 0 ? (
+                            <tr>
+                              <td colSpan={2}>No attendance records found.</td>
+                            </tr>
+                          ) : (
+                            adminAttendance.map((row) => (
+                              <tr key={`${row.employee_id}-${row.date}`}>
+                                <td>{row.date}</td>
+                                <td>
+                                  <span
+                                    className={
+                                      row.status === "Present"
+                                        ? "pillOk"
+                                        : "pillBad"
+                                    }
+                                  >
+                                    {row.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
               </article>
             </div>
