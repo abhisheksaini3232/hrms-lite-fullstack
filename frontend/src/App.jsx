@@ -84,6 +84,9 @@ export default function App() {
   const [adminAttendanceLoading, setAdminAttendanceLoading] = useState(false);
   const [adminAttendanceError, setAdminAttendanceError] = useState("");
   const [adminAttendanceSaved, setAdminAttendanceSaved] = useState(false);
+  const [adminAttendanceFilterFrom, setAdminAttendanceFilterFrom] =
+    useState("");
+  const [adminAttendanceFilterTo, setAdminAttendanceFilterTo] = useState("");
 
   const isAuthenticated = !!user;
   const userRole = user?.role || "HR";
@@ -464,7 +467,10 @@ export default function App() {
         const records = await adminGetAttendance(
           adminSelectedHrId,
           adminAttendanceEmployeeId,
-          {},
+          {
+            from: adminAttendanceFilterFrom || undefined,
+            to: adminAttendanceFilterTo || undefined,
+          },
         );
         setAdminAttendance(records);
       } catch (e) {
@@ -477,7 +483,13 @@ export default function App() {
     }
 
     loadAdminAttendance();
-  }, [userRole, adminSelectedHrId, adminAttendanceEmployeeId]);
+  }, [
+    userRole,
+    adminSelectedHrId,
+    adminAttendanceEmployeeId,
+    adminAttendanceFilterFrom,
+    adminAttendanceFilterTo,
+  ]);
 
   useEffect(() => {
     if (userRole !== "Admin") return;
@@ -523,6 +535,8 @@ export default function App() {
     setAdminAttendance([]);
     setAdminAttendanceError("");
     setAdminAttendanceSaved(false);
+    setAdminAttendanceFilterFrom("");
+    setAdminAttendanceFilterTo("");
   }, [userRole, adminSelectedHrId]);
 
   if (!isAuthenticated) {
@@ -930,7 +944,10 @@ export default function App() {
                           const records = await adminGetAttendance(
                             adminSelectedHrId,
                             adminAttendanceEmployeeId,
-                            {},
+                            {
+                              from: adminAttendanceFilterFrom || undefined,
+                              to: adminAttendanceFilterTo || undefined,
+                            },
                           );
                           setAdminAttendance(records);
                           setAdminAttendanceSaved(true);
@@ -986,6 +1003,42 @@ export default function App() {
                     {adminAttendanceError ? (
                       <p className="authError">{adminAttendanceError}</p>
                     ) : null}
+                    <div className="fieldRow" style={{ marginTop: 16 }}>
+                      <label>
+                        <span className="statLabel">From (optional)</span>
+                        <input
+                          type="date"
+                          value={adminAttendanceFilterFrom}
+                          onChange={(e) =>
+                            setAdminAttendanceFilterFrom(e.target.value)
+                          }
+                        />
+                      </label>
+                      <label>
+                        <span className="statLabel">To (optional)</span>
+                        <input
+                          type="date"
+                          value={adminAttendanceFilterTo}
+                          onChange={(e) =>
+                            setAdminAttendanceFilterTo(e.target.value)
+                          }
+                        />
+                      </label>
+                    </div>
+                    {(adminAttendanceFilterFrom || adminAttendanceFilterTo) && (
+                      <div className="buttonRow" style={{ marginTop: 8 }}>
+                        <button
+                          type="button"
+                          className="ghostBtn"
+                          onClick={() => {
+                            setAdminAttendanceFilterFrom("");
+                            setAdminAttendanceFilterTo("");
+                          }}
+                        >
+                          Clear date filter
+                        </button>
+                      </div>
+                    )}
                     <div className="tableScroller">
                       <table className="dataTable">
                         <thead>
