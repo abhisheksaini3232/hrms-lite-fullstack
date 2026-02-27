@@ -70,7 +70,7 @@ This repo provides that system as a deployed, production‑ready React + FastAPI
     - Employee table (ID, name, email, department, actions)
   - Supports loading state, empty state, and error messages.
 
-✅ **Status:** Fully implemented.
+ **Status:** Fully implemented.
 
 ### 3.2 Attendance Management
 
@@ -107,7 +107,7 @@ This repo provides that system as a deployed, production‑ready React + FastAPI
     - Picks HR → picks Employee → edits any date/status.
     - Uses its own **From / To** date range controls above the history table to filter attendance.
 
-✅ **Status:** Fully implemented, with extra Admin tooling for corrections.
+**Status:** Fully implemented, with extra Admin tooling for corrections.
 
 ---
 
@@ -152,7 +152,7 @@ This repo provides that system as a deployed, production‑ready React + FastAPI
 
 The frontend is configured to call the backend via `VITE_API_URL` (see `frontend/.env.example` and `frontend/src/api.js`).
 
-✅ **Status:** App is fully deployed; frontend talks to the live backend.
+**Status:** App is fully deployed; frontend talks to the live backend.
 
 ---
 
@@ -227,7 +227,7 @@ Open:
 
 - http://localhost:5173
 
-✅ **Status:** Repo contains everything needed to run locally for backend + frontend.
+**Status:** Repo contains everything needed to run locally for backend + frontend.
 
 ---
 
@@ -302,58 +302,3 @@ All admin/HR endpoints enforce role‑based access using JWTs.
 
 ---
 
-## 9. Assumptions & Limitations
-
-Relative to the original assignment brief:
-
-- **Single admin vs multi‑user**
-  - Brief: “Assume a single admin user (no authentication required).”
-  - Implementation: Adds email/password auth and two roles:
-    - `Admin` (global)
-    - `HR` (per‑workspace manager)
-  - You can still run with **one Admin account only** to match the original assumption; HR support is an extra for realism.
-
-- **Employee self‑service**
-  - An employee portal was prototyped but is currently disabled from login/registration to keep the focus on HR/Admin flows.
-
-- **Out‑of‑scope features**
-  - No leave management, payroll, or advanced HR modules.
-  - No bulk import/export.
-
-- **Security**
-  - JWTs are stored in `localStorage` for simplicity.
-  - For real production, you’d typically harden this (e.g., rotate secrets, refresh tokens, etc.).
-
----
-
-## 10. Checklist Against the Brief
-
-**Functional requirements**
-
-- Employee Management
-  - Add employee (ID, name, email, department) ➜ ✅
-  - View all employees ➜ ✅
-  - Delete employee ➜ ✅
-
-- Attendance Management
-  - Mark attendance with date + status (Present/Absent) ➜ ✅
-  - View attendance per employee ➜ ✅
-
-**Backend & database**
-
-- RESTful APIs for all functions ➜ ✅
-- Data persisted in a DB (MongoDB Atlas) ➜ ✅
-- Server‑side validation (required fields, email, duplicates) ➜ ✅
-- Graceful error handling with HTTP status codes + messages ➜ ✅
-
-**Constraints & guidelines**
-
-- “Single admin (no auth)” ➜ **Partially**: implemented as multi‑user with auth; can be operated as a single Admin user.
-- Leave/payroll etc. out of scope ➜ ✅ (not implemented).
-- Professional, production‑ready UI ➜ ✅ (custom dark theme, consistent spacing, typography, and layout).
-- Reusable components ➜ ✅ (`Topbar`, `EmployeesTab`, `AttendanceTab`, shared table + button styles).
-- Meaningful UI states (loading/empty/error) ➜ ✅.
-- Readable, modular, well‑structured code ➜ ✅ (separate routers, models, components, and API client).
-- Deployed with working live URLs ➜ ✅.
-
-Overall, the application **meets or exceeds** all core requirements of the HRMS Lite assignment, with small, clearly documented deviations (auth + roles) that make the system more realistic while still preserving the original functionality.
