@@ -138,6 +138,17 @@ export default function App() {
     async function restoreSession() {
       try {
         const me = await getCurrentUser();
+        if (me.role === "Employee") {
+          // Employee access is disabled in this UI: drop the token
+          // and stay on the auth screen.
+          try {
+            window.localStorage.removeItem("hrms_token");
+          } catch {
+            // ignore
+          }
+          return;
+        }
+
         setUser({
           id: me.id,
           username: me.username,
@@ -274,6 +285,18 @@ export default function App() {
       }
 
       const me = await getCurrentUser();
+      if (me.role === "Employee") {
+        setAuthError(
+          "Employee access is no longer available. Please sign in as HR or Admin.",
+        );
+        try {
+          window.localStorage.removeItem("hrms_token");
+        } catch {
+          // ignore
+        }
+        return;
+      }
+
       setUser({
         id: me.id,
         username: me.username,
@@ -577,7 +600,6 @@ export default function App() {
                   >
                     <option value="HR">HR</option>
                     <option value="Admin">Admin</option>
-                    <option value="Employee">Employee</option>
                   </select>
                 </label>
               )}
