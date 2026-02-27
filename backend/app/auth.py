@@ -44,12 +44,29 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
 
 
+def _truncate_for_bcrypt(secret: str) -> str:
+    """Ensure secret respects bcrypt's 72-byte limit.
+
+    Bcrypt only uses the first 72 bytes of the password. Very long
+    passwords cause passlib/bcrypt to raise a ValueError, so we
+    explicitly truncate in a UTF-8 safe way.
+    """
+
+    data = secret.encode("utf-8")
+    if len(data) <= 72:
+        return secret
+    truncated = data[:72]
+    return truncated.decode("utf-8", errors="ignore")
+
+
 def _hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    safe_password = _truncate_for_bcrypt(password)
+    return pwd_context.hash(safe_password)
 
 
 def _verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    safe_password = _truncate_for_bcrypt(plain_password)
+    return pwd_context.verify(safe_password, hashed_password)
 
 
 def _create_access_token(subject: str) -> str:
