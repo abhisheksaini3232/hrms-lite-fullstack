@@ -16,7 +16,7 @@ A lightweight HRMS app with:
 
 ## Assumptions / Limitations
 
-- Single admin user; no authentication/authorization.
+- Each HR user authenticates with email + password and manages an isolated set of employees/attendance.
 - Scope intentionally limited to employee CRUD + attendance (no payroll/leave/etc).
 - Attendance is tracked per employee per date (marking the same date again updates the status).
 
@@ -112,6 +112,9 @@ Notes:
 
 ## API Endpoints
 
+- `POST /auth/register` – create HR account (email + password), returns JWT
+- `POST /auth/login` – log in and receive JWT
+- `GET /auth/me` – current authenticated HR user
 - `GET /health`
 - `GET /employees`
 - `POST /employees` body: `{ "employee_id": "...", "full_name": "...", "email": "...", "department": "..." }`

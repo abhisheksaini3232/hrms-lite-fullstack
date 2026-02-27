@@ -105,6 +105,46 @@ export async function getDashboardSummary() {
   return res.json();
 }
 
+export async function getMyProfile() {
+  const res = await fetch(`${API_URL}/employees/me/profile`, {
+    headers: withAuth(),
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+export async function getMyAttendance(filters) {
+  const url = new URL(`${API_URL}/employees/me/attendance`);
+
+  if (typeof filters === "string") {
+    if (filters) url.searchParams.set("date", filters);
+  } else if (filters) {
+    const date = filters.date;
+    const dateFrom = filters.from;
+    const dateTo = filters.to;
+
+    if (date) url.searchParams.set("date", date);
+    if (dateFrom) url.searchParams.set("date_from", dateFrom);
+    if (dateTo) url.searchParams.set("date_to", dateTo);
+  }
+
+  const res = await fetch(url.toString(), {
+    headers: withAuth(),
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+export async function markMyAttendance(payload) {
+  const res = await fetch(`${API_URL}/employees/me/attendance`, {
+    method: "POST",
+    headers: withAuth({ "Content-Type": "application/json" }),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
 export async function registerUser(payload) {
   const res = await fetch(`${API_URL}/auth/register`, {
     method: "POST",
@@ -129,6 +169,25 @@ export async function getCurrentUser() {
   const res = await fetch(`${API_URL}/auth/me`, {
     headers: withAuth(),
   });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+export async function getHrsOverview() {
+  const res = await fetch(`${API_URL}/admin/hrs`, {
+    headers: withAuth(),
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+export async function getHrEmployees(hrId) {
+  const res = await fetch(
+    `${API_URL}/admin/hrs/${encodeURIComponent(hrId)}/employees`,
+    {
+      headers: withAuth(),
+    },
+  );
   if (!res.ok) throw new Error(await readError(res));
   return res.json();
 }

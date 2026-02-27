@@ -12,14 +12,21 @@ import {
   registerUser,
   loginUser,
   getCurrentUser,
+  getMyProfile,
+  getMyAttendance,
+  markMyAttendance,
+  getHrsOverview,
+  getHrEmployees,
 } from "./api.js";
 
 export default function App() {
   const [authMode, setAuthMode] = useState("login"); // 'login' | 'register'
+  const [authName, setAuthName] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
+  const [authRole, setAuthRole] = useState("HR");
   const [user, setUser] = useState(null);
 
   const [tab, setTab] = useState("employees");
@@ -49,7 +56,26 @@ export default function App() {
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState("");
 
+  // Employee self-service data
+  const [selfProfile, setSelfProfile] = useState(null);
+  const [selfAttendance, setSelfAttendance] = useState([]);
+  const [selfLoading, setSelfLoading] = useState(false);
+  const [selfError, setSelfError] = useState("");
+
+  const [selfTodayStatus, setSelfTodayStatus] = useState("Present");
+  const [selfTodaySubmitting, setSelfTodaySubmitting] = useState(false);
+  const [selfTodayError, setSelfTodayError] = useState("");
+
+  // Admin overview data
+  const [adminHrs, setAdminHrs] = useState([]);
+  const [adminSelectedHrId, setAdminSelectedHrId] = useState("");
+  const [adminSelectedHr, setAdminSelectedHr] = useState(null);
+  const [adminHrEmployees, setAdminHrEmployees] = useState([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminError, setAdminError] = useState("");
+
   const isAuthenticated = !!user;
+  const userRole = user?.role || "HR";
 
   const canSubmit = useMemo(() => {
     return (
@@ -80,6 +106,34 @@ export default function App() {
     }
     bootstrapAuth();
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || userRole !== "Employee") return;
+
+    async function loadSelf() {
+      setSelfLoading(true);
+      setSelfError("");
+      try {
+        const profile = await getMyProfile();
+        setSelfProfile(profile);
+
+        const today = new Date();
+        const to = today.toISOString().slice(0, 10);
+        const fromDate = new Date(today);
+        fromDate.setDate(fromDate.getDate() - 29);
+        const from = fromDate.toISOString().slice(0, 10);
+
+        const attendanceData = await getMyAttendance({ from, to });
+        setSelfAttendance(attendanceData);
+      } catch (e) {
+        setSelfError(e?.message || "Failed to load your workspace");
+      } finally {
+        setSelfLoading(false);
+      }
+    }
+
+    loadSelf();
+  }, [isAuthenticated, userRole]);
 
   async function refresh() {
     setLoading(true);
@@ -112,10 +166,11 @@ export default function App() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
+    if (userRole === "Employee") return;
     refresh();
     refreshDashboard();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, userRole]);
 
   async function refreshAttendance(
     nextEmployeeId = selectedEmployeeId,
@@ -149,14 +204,37 @@ export default function App() {
   async function handleAuthSubmit(e) {
     e.preventDefault();
     setAuthError("");
+
+    const trimmedName = authName.trim();
+    const trimmedEmail = authEmail.trim();
+    if (!trimmedName) {
+      setAuthError("Please enter your name.");
+      return;
+    }
+    if (!trimmedEmail || !trimmedEmail.includes("@")) {
+      setAuthError("Please enter a valid work email.");
+      return;
+    }
+    if (!authPassword || authPassword.length < 6) {
+      setAuthError("Password must be at least 6 characters.");
+      return;
+    }
+
     setAuthLoading(true);
     try {
-      const payload = { email: authEmail.trim(), password: authPassword };
       let result;
       if (authMode === "register") {
-        result = await registerUser(payload);
+        result = await registerUser({
+          username: trimmedName,
+          email: trimmedEmail,
+          password: authPassword,
+          role: authRole,
+        });
       } else {
-        result = await loginUser(payload);
+        result = await loginUser({
+          email: trimmedEmail,
+          password: authPassword,
+        });
       }
       window.localStorage.setItem("hrms_token", result.access_token);
       const me = await getCurrentUser();
@@ -241,14 +319,98 @@ export default function App() {
     }
   }
 
+  async function handleSelfTodaySubmit(e) {
+    e.preventDefault();
+    setSelfTodayError("");
+
+    try {
+      setSelfTodaySubmitting(true);
+      await markMyAttendance({
+        date: todayStr,
+        status: selfTodayStatus,
+      });
+
+      const today = new Date();
+      const to = today.toISOString().slice(0, 10);
+      const fromDate = new Date(today);
+      fromDate.setDate(fromDate.getDate() - 29);
+      const from = fromDate.toISOString().slice(0, 10);
+
+      const attendanceData = await getMyAttendance({ from, to });
+      setSelfAttendance(attendanceData);
+    } catch (e) {
+      setSelfTodayError(e?.message || "Failed to update today's attendance");
+    } finally {
+      setSelfTodaySubmitting(false);
+    }
+  }
+
   const presentDays = useMemo(() => {
     return attendance.filter((a) => a.status === "Present").length;
   }, [attendance]);
+
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const selfTodayRecord = useMemo(
+    () => selfAttendance.find((a) => a.date === todayStr) || null,
+    [selfAttendance, todayStr],
+  );
+
+  useEffect(() => {
+    if (selfTodayRecord) {
+      setSelfTodayStatus(selfTodayRecord.status);
+    }
+  }, [selfTodayRecord]);
+
+  const selfPresentDays = useMemo(() => {
+    return selfAttendance.filter((a) => a.status === "Present").length;
+  }, [selfAttendance]);
+
+  const selfAbsentDays = useMemo(() => {
+    return selfAttendance.filter((a) => a.status === "Absent").length;
+  }, [selfAttendance]);
 
   const dashboardRows = useMemo(() => {
     if (!dashboard?.per_employee) return [];
     return dashboard.per_employee;
   }, [dashboard]);
+
+  useEffect(() => {
+    if (userRole !== "Admin" || tab !== "admin") return;
+
+    async function loadAdmin() {
+      setAdminLoading(true);
+      setAdminError("");
+      try {
+        const hrs = await getHrsOverview();
+        setAdminHrs(hrs);
+
+        if (hrs.length === 0) {
+          setAdminSelectedHrId("");
+          setAdminSelectedHr(null);
+          setAdminHrEmployees([]);
+          return;
+        }
+
+        let targetId = adminSelectedHrId || hrs[0].id;
+        const match = hrs.find((h) => h.id === targetId) || hrs[0];
+        targetId = match.id;
+
+        setAdminSelectedHrId(targetId);
+        setAdminSelectedHr(match);
+
+        const detail = await getHrEmployees(targetId);
+        setAdminHrEmployees(detail.employees || []);
+      } catch (e) {
+        setAdminError(e?.message || "Failed to load admin overview");
+      } finally {
+        setAdminLoading(false);
+      }
+    }
+
+    loadAdmin();
+  }, [userRole, tab, adminSelectedHrId]);
+
   if (!isAuthenticated) {
     return (
       <div className="app appAuth">
@@ -287,13 +449,21 @@ export default function App() {
             </div>
             <form className="authForm" onSubmit={handleAuthSubmit}>
               <label>
+                Name
+                <input
+                  type="text"
+                  value={authName}
+                  onChange={(e) => setAuthName(e.target.value)}
+                  placeholder="Alex Johnson"
+                />
+              </label>
+              <label>
                 Work Email
                 <input
                   type="email"
                   value={authEmail}
                   onChange={(e) => setAuthEmail(e.target.value)}
                   placeholder="you@company.com"
-                  required
                 />
               </label>
               <label>
@@ -303,8 +473,18 @@ export default function App() {
                   value={authPassword}
                   onChange={(e) => setAuthPassword(e.target.value)}
                   placeholder="••••••••"
-                  required
                 />
+              </label>
+              <label>
+                Role
+                <select
+                  value={authRole}
+                  onChange={(e) => setAuthRole(e.target.value)}
+                >
+                  <option value="HR">HR</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Employee">Employee</option>
+                </select>
               </label>
               {authError ? <p className="authError">{authError}</p> : null}
               <button
@@ -321,6 +501,170 @@ export default function App() {
             </form>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Employee role: show a limited portal instead of the management console.
+  if (userRole === "Employee") {
+    return (
+      <div className="app appDashboard">
+        <Topbar
+          tab={tab}
+          onTabChange={setTab}
+          user={user}
+          onLogout={handleLogout}
+        />
+
+        <main className="layoutShell">
+          <section className="pane">
+            <header className="paneHeader">
+              <div>
+                <h1 className="paneTitle">Employee Portal</h1>
+                <p className="paneSubtitle">
+                  You are signed in as an employee. Review your profile and
+                  recent attendance activity below.
+                </p>
+              </div>
+            </header>
+            <div className="paneGrid">
+              <article className="surface">
+                <div className="surfaceHeader">
+                  <div>
+                    <h2>My Profile</h2>
+                    <p>Your employment details as recorded by HR.</p>
+                  </div>
+                </div>
+                {selfLoading ? (
+                  <p>Loading your workspace…</p>
+                ) : selfError ? (
+                  <p className="authError">{selfError}</p>
+                ) : selfProfile ? (
+                  <div className="paneGrid">
+                    <div className="statCard">
+                      <p className="statLabel">Name</p>
+                      <p className="statValue">{selfProfile.full_name}</p>
+                    </div>
+                    <div className="statCard">
+                      <p className="statLabel">Employee ID</p>
+                      <p className="statValue">{selfProfile.employee_id}</p>
+                    </div>
+                    <div className="statCard">
+                      <p className="statLabel">Department</p>
+                      <p className="statValue">{selfProfile.department}</p>
+                    </div>
+                    <div className="statCard">
+                      <p className="statLabel">Work Email</p>
+                      <p className="statValue">{selfProfile.email}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p>
+                    No employee record is linked to this account yet. Please
+                    contact your HR or Admin if you believe this is an error.
+                  </p>
+                )}
+              </article>
+              <article className="surface">
+                <div className="surfaceHeader">
+                  <div>
+                    <h2>My Attendance (last 30 days)</h2>
+                    <p>A quick view of your recent presence and absences.</p>
+                  </div>
+                </div>
+                {selfLoading ? (
+                  <p>Loading attendance…</p>
+                ) : selfError ? (
+                  <p className="authError">{selfError}</p>
+                ) : (
+                  <>
+                    <form
+                      className="rowInline"
+                      onSubmit={handleSelfTodaySubmit}
+                    >
+                      <div>
+                        <p className="statLabel">Today</p>
+                        <p className="statValue">{todayStr}</p>
+                      </div>
+                      <div className="rowInline">
+                        <label>
+                          <span className="statLabel">Status</span>
+                          <select
+                            value={selfTodayStatus}
+                            onChange={(e) => setSelfTodayStatus(e.target.value)}
+                          >
+                            <option value="Present">Present</option>
+                            <option value="Absent">Absent</option>
+                          </select>
+                        </label>
+                        <button
+                          type="submit"
+                          className="primaryBtn"
+                          disabled={selfTodaySubmitting}
+                        >
+                          {selfTodaySubmitting
+                            ? "Saving…"
+                            : "Save today's attendance"}
+                        </button>
+                      </div>
+                    </form>
+                    {selfTodayError ? (
+                      <p className="authError">{selfTodayError}</p>
+                    ) : null}
+                    <div className="paneGrid">
+                      <div className="statCard">
+                        <p className="statLabel">Recorded Days</p>
+                        <p className="statValue">{selfAttendance.length}</p>
+                      </div>
+                      <div className="statCard">
+                        <p className="statLabel">Present</p>
+                        <p className="statValue">{selfPresentDays}</p>
+                      </div>
+                      <div className="statCard">
+                        <p className="statLabel">Absent</p>
+                        <p className="statValue">{selfAbsentDays}</p>
+                      </div>
+                    </div>
+                    <div className="tableScroller">
+                      <table className="dataTable">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selfAttendance.length === 0 ? (
+                            <tr>
+                              <td colSpan={2}>No attendance recorded.</td>
+                            </tr>
+                          ) : (
+                            selfAttendance.map((row) => (
+                              <tr key={`${row.employee_id}-${row.date}`}>
+                                <td>{row.date}</td>
+                                <td>
+                                  <span
+                                    className={
+                                      row.status === "Present"
+                                        ? "pillOk"
+                                        : "pillBad"
+                                    }
+                                  >
+                                    {row.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </article>
+            </div>
+          </section>
+        </main>
       </div>
     );
   }
@@ -358,7 +702,7 @@ export default function App() {
             onDelete={onDelete}
             goToAttendance={goToAttendance}
           />
-        ) : (
+        ) : tab === "attendance" ? (
           <AttendanceTab
             employees={employees}
             selectedEmployeeId={selectedEmployeeId}
@@ -378,7 +722,105 @@ export default function App() {
             attendanceFilterTo={attendanceFilterTo}
             setAttendanceFilterTo={setAttendanceFilterTo}
           />
-        )}
+        ) : userRole === "Admin" ? (
+          <section className="pane">
+            <header className="paneHeader">
+              <div>
+                <h1 className="paneTitle">Admin Overview</h1>
+                <p className="paneSubtitle">
+                  Review all HR accounts and the employees managed under each
+                  HR.
+                </p>
+              </div>
+            </header>
+            <div className="paneGrid">
+              <article className="surface">
+                <div className="surfaceHeader">
+                  <div>
+                    <h2>HR Accounts</h2>
+                    <p>Select an HR account to see its employee list.</p>
+                  </div>
+                </div>
+                {adminLoading ? (
+                  <p>Loading HR accounts…</p>
+                ) : adminError ? (
+                  <p className="authError">{adminError}</p>
+                ) : adminHrs.length === 0 ? (
+                  <p>No HR accounts found.</p>
+                ) : (
+                  <div className="tableScroller">
+                    <table className="dataTable">
+                      <thead>
+                        <tr>
+                          <th>HR</th>
+                          <th>Email</th>
+                          <th>Employees</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminHrs.map((hr) => (
+                          <tr
+                            key={hr.id}
+                            onClick={() => setAdminSelectedHrId(hr.id)}
+                            style={{
+                              cursor: "pointer",
+                              backgroundColor:
+                                adminSelectedHrId === hr.id
+                                  ? "rgba(148, 163, 184, 0.12)"
+                                  : "transparent",
+                            }}
+                          >
+                            <td>{hr.username || "(no name)"}</td>
+                            <td>{hr.email}</td>
+                            <td>{hr.employees_count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </article>
+              <article className="surface">
+                <div className="surfaceHeader">
+                  <div>
+                    <h2>Employees under {adminSelectedHr?.username || "—"}</h2>
+                    <p>All employees that belong to the selected HR account.</p>
+                  </div>
+                </div>
+                {adminLoading ? (
+                  <p>Loading employees…</p>
+                ) : adminError ? (
+                  <p className="authError">{adminError}</p>
+                ) : adminHrEmployees.length === 0 ? (
+                  <p>No employees found for this HR.</p>
+                ) : (
+                  <div className="tableScroller">
+                    <table className="dataTable">
+                      <thead>
+                        <tr>
+                          <th>Employee ID</th>
+                          <th>Name</th>
+                          <th>Email</th>
+                          <th>Department</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminHrEmployees.map((emp) => (
+                          <tr key={emp.employee_id}>
+                            <td>{emp.employee_id}</td>
+                            <td>{emp.full_name}</td>
+                            <td>{emp.email}</td>
+                            <td>{emp.department}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </article>
+            </div>
+          </section>
+        ) : null}
       </main>
     </div>
   );

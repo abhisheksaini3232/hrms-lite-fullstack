@@ -5,6 +5,7 @@ import logging
 from .db import get_db
 from .routes.dashboard import router as dashboard_router
 from .routes.employees import router as employees_router
+from .routes.admin import router as admin_router
 from .auth import router as auth_router
 from .settings import settings
 
@@ -47,4 +48,5 @@ async def _startup_indexes():
 
 app.include_router(employees_router)
 app.include_router(dashboard_router)
+app.include_router(admin_router)
 app.include_router(auth_router)

@@ -24,7 +24,9 @@ export default function AttendanceTab({
       <header className="paneHeader">
         <div>
           <h1 className="paneTitle">Attendance board</h1>
-          <p className="paneSubtitle">Mark and review presence for employees in this HR workspace.</p>
+          <p className="paneSubtitle">
+            Mark and review presence for employees in this HR workspace.
+          </p>
         </div>
       </header>
 
@@ -33,7 +35,9 @@ export default function AttendanceTab({
           <h2>Mark attendance</h2>
         </div>
         {employees.length === 0 ? (
-          <p className="muted">Add at least one employee before marking attendance.</p>
+          <p className="muted">
+            Add at least one employee before marking attendance.
+          </p>
         ) : (
           <form className="formGrid" onSubmit={onMarkAttendance}>
             <div className="fieldRow">
@@ -149,7 +153,11 @@ export default function AttendanceTab({
                       {a.date}
                     </td>
                     <td data-label="Status">
-                      <span className={a.status === "Present" ? "pillOk" : "pillBad"}>
+                      <span
+                        className={
+                          a.status === "Present" ? "pillOk" : "pillBad"
+                        }
+                      >
                         {a.status}
                       </span>
                     </td>

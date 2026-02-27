@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 export default function EmployeesTab({
   employees,
@@ -22,6 +22,23 @@ export default function EmployeesTab({
   onDelete,
   goToAttendance,
 }) {
+  const [employeeFormAttempted, setEmployeeFormAttempted] = useState(false);
+
+  const showIdError = employeeFormAttempted && !employeeId.trim();
+  const showNameError = employeeFormAttempted && !fullName.trim();
+  const showEmailError = employeeFormAttempted && !email.trim();
+  const showDeptError = employeeFormAttempted && !department.trim();
+
+  function handleSubmit(e) {
+    if (!canSubmit) {
+      e.preventDefault();
+      setEmployeeFormAttempted(true);
+      return;
+    }
+    setEmployeeFormAttempted(false);
+    onAdd(e);
+  }
+
   return (
     <div className="pane">
       <header className="paneHeader">
@@ -106,7 +123,7 @@ export default function EmployeesTab({
             <h2>New employee</h2>
           </div>
 
-          <form onSubmit={onAdd} className="formGrid">
+          <form onSubmit={handleSubmit} className="formGrid">
             <div className="fieldRow">
               <label>
                 Employee ID
@@ -115,6 +132,9 @@ export default function EmployeesTab({
                   onChange={(e) => setEmployeeId(e.target.value)}
                   placeholder="EMP-001"
                 />
+                {showIdError ? (
+                  <span className="fieldError">Employee ID is required.</span>
+                ) : null}
               </label>
               <label>
                 Department
@@ -123,6 +143,9 @@ export default function EmployeesTab({
                   onChange={(e) => setDepartment(e.target.value)}
                   placeholder="People Operations"
                 />
+                {showDeptError ? (
+                  <span className="fieldError">Department is required.</span>
+                ) : null}
               </label>
             </div>
             <label>
@@ -132,6 +155,9 @@ export default function EmployeesTab({
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Jordan Smith"
               />
+              {showNameError ? (
+                <span className="fieldError">Full name is required.</span>
+              ) : null}
             </label>
             <label>
               Work email
@@ -140,6 +166,9 @@ export default function EmployeesTab({
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="employee@company.com"
               />
+              {showEmailError ? (
+                <span className="fieldError">Work email is required.</span>
+              ) : null}
             </label>
 
             <div className="buttonRow">

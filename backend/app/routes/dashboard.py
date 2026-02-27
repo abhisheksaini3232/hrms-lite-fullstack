@@ -3,32 +3,36 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from ..db import get_db
-from ..auth import get_current_user
+from ..auth import require_roles
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 
 @router.get("/summary")
-async def dashboard_summary(current_user=Depends(get_current_user)):
+async def dashboard_summary(current_user=Depends(require_roles("HR", "Admin"))):
     db = get_db()
 
-    owner_filter = {"owner_id": current_user["_id"]}
+    is_admin = (current_user.get("role") == "Admin")
+    owner_filter = {} if is_admin else {"owner_id": current_user["_id"]}
 
-    employees_total = await db.employees.count_documents(owner_filter)
-    attendance_total = await db.attendance.count_documents(owner_filter)
+    employees_total = await db.employees.count_documents(owner_filter or {})
+    attendance_total = await db.attendance.count_documents(owner_filter or {})
     present_total = await db.attendance.count_documents(
         {"status": "Present", **owner_filter}
+        if not is_admin
+        else {"status": "Present"}
     )
     absent_total = await db.attendance.count_documents(
         {"status": "Absent", **owner_filter}
+        if not is_admin
+        else {"status": "Absent"}
     )
 
-    pipeline = [
-        {
-            "$match": {
-                "owner_id": current_user["_id"],
-            }
-        },
+    pipeline = []
+    if not is_admin:
+        pipeline.append({"$match": {"owner_id": current_user["_id"]}})
+    pipeline.extend(
+        [
         {"$sort": {"created_at": -1}},
         {"$limit": 200},
         {
@@ -87,7 +91,7 @@ async def dashboard_summary(current_user=Depends(get_current_user)):
             }
         },
         {"$sort": {"present_days": -1, "employee_id": 1}},
-    ]
+    )
 
     per_employee = await db.employees.aggregate(pipeline).to_list(length=200)
 

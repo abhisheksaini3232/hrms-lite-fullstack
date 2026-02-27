@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, Literal
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -20,8 +20,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 class UserCreate(BaseModel):
+    username: str = Field(min_length=1, max_length=100)
     email: EmailStr
     password: str = Field(min_length=6, max_length=128)
+    role: Literal["HR", "Admin", "Employee"] = "HR"
 
 
 class UserLogin(BaseModel):
@@ -31,7 +33,9 @@ class UserLogin(BaseModel):
 
 class UserOut(BaseModel):
     id: str
+    username: str
     email: EmailStr
+    role: str
     created_at: datetime
 
 
@@ -100,6 +104,28 @@ async def get_current_user(
     return user
 
 
+def require_roles(*allowed_roles: str):
+    """Dependency factory to enforce that the current user has one of the given roles.
+
+    Usage in routes:
+
+        @router.get("/something")
+        async def endpoint(current_user=Depends(require_roles("HR", "Admin"))):
+            ...
+    """
+
+    async def _dependency(current_user=Depends(get_current_user)):
+        role = current_user.get("role") or "HR"
+        if role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions for this action",
+            )
+        return current_user
+
+    return _dependency
+
+
 @router.post("/register", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
 async def register(payload: UserCreate):
     db = get_db()
@@ -114,8 +140,10 @@ async def register(payload: UserCreate):
     now = datetime.utcnow()
     user_doc = {
         "_id": payload.email.lower(),  # simple string id
+        "username": payload.username.strip(),
         "email": payload.email.lower(),
         "password_hash": _hash_password(payload.password),
+        "role": payload.role,
         "created_at": now,
     }
 
@@ -142,6 +170,8 @@ async def login(payload: UserLogin):
 async def me(current_user=Depends(get_current_user)):
     return UserOut(
         id=current_user["_id"],
+        username=current_user.get("username", ""),
         email=current_user["email"],
+        role=current_user.get("role", "HR"),
         created_at=current_user["created_at"],
     )
