@@ -83,6 +83,7 @@ export default function App() {
   const [adminAttendance, setAdminAttendance] = useState([]);
   const [adminAttendanceLoading, setAdminAttendanceLoading] = useState(false);
   const [adminAttendanceError, setAdminAttendanceError] = useState("");
+  const [adminAttendanceSaved, setAdminAttendanceSaved] = useState(false);
 
   const isAuthenticated = !!user;
   const userRole = user?.role || "HR";
@@ -426,12 +427,16 @@ export default function App() {
     if (userRole !== "Admin") return;
     if (!adminSelectedHrId || !adminAttendanceEmployeeId) {
       setAdminAttendance([]);
+      setAdminAttendanceError("");
+      setAdminAttendanceSaved(false);
       return;
     }
 
     async function loadAdminAttendance() {
       setAdminAttendanceLoading(true);
       setAdminAttendanceError("");
+      setAdminAttendance([]);
+      setAdminAttendanceSaved(false);
       try {
         const records = await adminGetAttendance(
           adminSelectedHrId,
@@ -485,6 +490,16 @@ export default function App() {
     }
 
     loadAdmin();
+  }, [userRole, adminSelectedHrId]);
+
+  // When switching HRs, clear any previously selected employee and
+  // their attendance to avoid showing stale data from another HR.
+  useEffect(() => {
+    if (userRole !== "Admin") return;
+    setAdminAttendanceEmployeeId("");
+    setAdminAttendance([]);
+    setAdminAttendanceError("");
+    setAdminAttendanceSaved(false);
   }, [userRole, adminSelectedHrId]);
 
   if (!isAuthenticated) {
@@ -880,6 +895,7 @@ export default function App() {
                       onSubmit={async (e) => {
                         e.preventDefault();
                         setAdminAttendanceError("");
+                        setAdminAttendanceSaved(false);
                         try {
                           await adminMarkAttendance(
                             adminSelectedHrId,
@@ -895,6 +911,7 @@ export default function App() {
                             {},
                           );
                           setAdminAttendance(records);
+                          setAdminAttendanceSaved(true);
                         } catch (err) {
                           setAdminAttendanceError(
                             err?.message ||
@@ -929,10 +946,13 @@ export default function App() {
                           <option value="Absent">Absent</option>
                         </select>
                       </label>
-                      <button type="submit" className="primaryBtn">
-                        Save attendance
+                      <button type="submit" className="ghostBtn">
+                        Save
                       </button>
                     </form>
+                    {adminAttendanceSaved && !adminAttendanceError ? (
+                      <p className="muted">Attendance saved.</p>
+                    ) : null}
                     {adminAttendanceError ? (
                       <p className="authError">{adminAttendanceError}</p>
                     ) : null}
