@@ -19,6 +19,7 @@ import {
   getCurrentUser,
   adminGetAttendance,
   adminMarkAttendance,
+  adminDeleteEmployee,
 } from "./api.js";
 
 export default function App() {
@@ -92,25 +93,24 @@ export default function App() {
   const userRole = user?.role || "HR";
 
   const canSubmit = useMemo(() => {
-    import {
-      getEmployees,
-      createEmployee,
-      deleteEmployee,
-      markAttendance,
-      getAttendance,
-      getDashboardSummary,
-      getMyProfile,
-      getMyAttendance,
-      markMyAttendance,
-      registerUser,
-      loginUser,
-      getCurrentUser,
-      getHrsOverview,
-      getHrEmployees,
-      adminGetAttendance,
-      adminMarkAttendance,
-      adminDeleteEmployee,
-    } from "./api";
+    return (
+      employeeId.trim().length > 0 &&
+      fullName.trim().length > 0 &&
+      email.trim().length > 0 &&
+      department.trim().length > 0
+    );
+  }, [employeeId, fullName, email, department]);
+
+  const canMarkAttendance = useMemo(() => {
+    return (
+      selectedEmployeeId.trim().length > 0 && attendanceDate.trim().length > 0
+    );
+  }, [selectedEmployeeId, attendanceDate]);
+
+  useEffect(() => {
+    if (!isAuthenticated || userRole !== "Employee") return;
+
+    async function loadSelf() {
       setSelfLoading(true);
       setSelfError("");
       try {
