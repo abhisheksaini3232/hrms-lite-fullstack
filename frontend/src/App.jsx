@@ -891,7 +891,7 @@ export default function App() {
                 ) : (
                   <>
                     <form
-                      className="rowInline"
+                      className="formGrid"
                       onSubmit={async (e) => {
                         e.preventDefault();
                         setAdminAttendanceError("");
@@ -920,35 +920,43 @@ export default function App() {
                         }
                       }}
                     >
-                      <div>
-                        <p className="statLabel">Employee</p>
-                        <p className="statValue">{adminAttendanceEmployeeId}</p>
+                      <div className="rowInline">
+                        <div>
+                          <p className="statLabel">Employee</p>
+                          <p className="statValue">
+                            {adminAttendanceEmployeeId}
+                          </p>
+                        </div>
                       </div>
-                      <label>
-                        <span className="statLabel">Date</span>
-                        <input
-                          type="date"
-                          value={adminAttendanceDate}
-                          onChange={(e) =>
-                            setAdminAttendanceDate(e.target.value)
-                          }
-                        />
-                      </label>
-                      <label>
-                        <span className="statLabel">Status</span>
-                        <select
-                          value={adminAttendanceStatus}
-                          onChange={(e) =>
-                            setAdminAttendanceStatus(e.target.value)
-                          }
-                        >
-                          <option value="Present">Present</option>
-                          <option value="Absent">Absent</option>
-                        </select>
-                      </label>
-                      <button type="submit" className="ghostBtn">
-                        Save
-                      </button>
+                      <div className="fieldRow">
+                        <label>
+                          <span className="statLabel">Date</span>
+                          <input
+                            type="date"
+                            value={adminAttendanceDate}
+                            onChange={(e) =>
+                              setAdminAttendanceDate(e.target.value)
+                            }
+                          />
+                        </label>
+                        <label>
+                          <span className="statLabel">Status</span>
+                          <select
+                            value={adminAttendanceStatus}
+                            onChange={(e) =>
+                              setAdminAttendanceStatus(e.target.value)
+                            }
+                          >
+                            <option value="Present">Present</option>
+                            <option value="Absent">Absent</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div className="buttonRow">
+                        <button type="submit" className="ghostBtn">
+                          Save
+                        </button>
+                      </div>
                     </form>
                     {adminAttendanceSaved && !adminAttendanceError ? (
                       <p className="muted">Attendance saved.</p>

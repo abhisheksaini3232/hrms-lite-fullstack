@@ -133,13 +133,14 @@ async def mark_attendance(
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
 
-    # HR can only mark attendance for today's date; editing past or
-    # future records is reserved for Admin via the admin endpoints.
+    # HR can record attendance for today or any past date, but only
+    # once per day. Any subsequent changes must be done by an Admin
+    # via the admin endpoints.
     today = date.today()
-    if payload.date != today:
+    if payload.date > today:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="HR can only mark attendance for today's date",
+            detail="HR cannot mark attendance for future dates",
         )
 
     date_str = _date_to_str(payload.date)
@@ -150,12 +151,36 @@ async def mark_attendance(
     }
     now = datetime.utcnow()
 
-    # Marking attendance should be idempotent for same date: update if exists, insert if not.
-    await db.attendance.update_one(
-        doc_filter,
-        {"$set": {"status": payload.status, "created_at": now}},
-        upsert=True,
-    )
+    existing = await db.attendance.find_one(doc_filter)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Attendance for this date is already recorded. "
+                "Only an Admin can modify existing records."
+            ),
+        )
+
+    try:
+        await db.attendance.insert_one(
+            {
+                "employee_id": employee_id,
+                "date": date_str,
+                "owner_id": current_user["_id"],
+                "status": payload.status,
+                "created_at": now,
+            }
+        )
+    except DuplicateKeyError:
+        # In case of a rare race where another writer inserted first,
+        # treat it as "already recorded".
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Attendance for this date is already recorded. "
+                "Only an Admin can modify existing records."
+            ),
+        )
 
     saved = await db.attendance.find_one(doc_filter)
     return _attendance_doc_to_out(saved)
