@@ -122,33 +122,20 @@ async def get_current_user(
 
 
 def require_roles(*allowed_roles: str):
-    """TEMPORARY: authentication disabled.
+    """Ensure the current user has one of the allowed roles.
 
-    The original implementation enforced that the current user had one of the
-    allowed roles using JWT auth and `get_current_user`:
-
-        async def _dependency(current_user=Depends(get_current_user)):
-            role = current_user.get("role") or "HR"
-            if role not in allowed_roles:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Not enough permissions for this action",
-                )
-            return current_user
-
-    For now we bypass auth entirely and always return a demo HR user so that
-    the app can be used without logging in. To restore auth later, replace the
-    body of this function with the commented implementation above.
+    This uses JWT authentication via `get_current_user` and raises 403 if the
+    user's role is not permitted for the requested action.
     """
 
-    async def _dependency():
-        return {
-            "_id": "demo-hr",
-            "username": "Demo HR",
-            "email": "demo@example.com",
-            "role": "HR",
-            "created_at": datetime.utcnow(),
-        }
+    async def _dependency(current_user=Depends(get_current_user)):
+        role = current_user.get("role") or "HR"
+        if role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions for this action",
+            )
+        return current_user
 
     return _dependency
 
@@ -164,6 +151,28 @@ async def register(payload: UserCreate):
             detail="User with this email already exists",
         )
 
+    # If an Employee is registering, ensure there is an existing employee
+    # record for this email so that we can link their login to HR-managed
+    # data. This prevents arbitrary emails from registering as employees.
+    linked_employee = None
+    if payload.role == "Employee":
+        linked_employee = await db.employees.find_one(
+            {"email": payload.email.lower()}
+        )
+        if not linked_employee:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "No employee record found for this email. "
+                    "Please contact your HR to be added first."
+                ),
+            )
+        if linked_employee.get("user_id"):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An account is already linked for this employee.",
+            )
+
     now = datetime.utcnow()
     user_doc = {
         "_id": payload.email.lower(),  # simple string id
@@ -175,6 +184,13 @@ async def register(payload: UserCreate):
     }
 
     await db.users.insert_one(user_doc)
+
+    # Link the employee record to this user account when an employee registers.
+    if linked_employee is not None:
+        await db.employees.update_one(
+            {"_id": linked_employee["_id"]},
+            {"$set": {"user_id": user_doc["_id"]}},
+        )
 
     access_token = _create_access_token(subject=user_doc["_id"])
     return TokenOut(access_token=access_token)

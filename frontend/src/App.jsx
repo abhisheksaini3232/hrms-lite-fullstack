@@ -14,13 +14,12 @@ import {
   markMyAttendance,
   getHrsOverview,
   getHrEmployees,
+  registerUser,
+  loginUser,
+  getCurrentUser,
 } from "./api.js";
 
 export default function App() {
-  // Lightweight, frontend-only auth inspired by the reference repo.
-  // This does NOT call the backend yet; it just collects credentials
-  // and then creates a local user object. When backend auth is ready,
-  // you can wire this up to /auth/register and /auth/login again.
   const [authMode, setAuthMode] = useState("login"); // 'login' | 'register'
   const [authName, setAuthName] = useState("");
   const [authEmail, setAuthEmail] = useState("");
@@ -120,6 +119,33 @@ export default function App() {
     loadSelf();
   }, [isAuthenticated, userRole]);
 
+  // Attempt to restore a session from a stored token on first load.
+  useEffect(() => {
+    if (isAuthenticated) return;
+
+    async function restoreSession() {
+      try {
+        const me = await getCurrentUser();
+        setUser({
+          id: me.id,
+          username: me.username,
+          email: me.email,
+          role: me.role,
+          createdAt: me.created_at,
+        });
+      } catch {
+        try {
+          window.localStorage.removeItem("hrms_token");
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    restoreSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function refresh() {
     setLoading(true);
     setError("");
@@ -185,7 +211,8 @@ export default function App() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, selectedEmployeeId, attendanceFilterFrom, attendanceFilterTo]);
-  function handleAuthSubmit(e) {
+
+  async function handleAuthSubmit(e) {
     e.preventDefault();
     setAuthError("");
 
@@ -207,22 +234,52 @@ export default function App() {
       return;
     }
 
-    const role = authMode === "register" ? authRole : "HR";
+    try {
+      let tokenResponse;
+      if (authMode === "register") {
+        tokenResponse = await registerUser({
+          username: trimmedName,
+          email: trimmedEmail,
+          password: authPassword,
+          role: authRole,
+        });
+      } else {
+        tokenResponse = await loginUser({
+          identifier: trimmedEmail,
+          password: authPassword,
+        });
+      }
 
-    const fakeUser = {
-      id: `local-${Date.now()}`,
-      username: trimmedName || "HR Manager",
-      email: trimmedEmail,
-      role,
-    };
+      try {
+        window.localStorage.setItem("hrms_token", tokenResponse.access_token);
+      } catch {
+        // ignore storage errors
+      }
 
-    setUser(fakeUser);
+      const me = await getCurrentUser();
+      setUser({
+        id: me.id,
+        username: me.username,
+        email: me.email,
+        role: me.role,
+        createdAt: me.created_at,
+      });
+      setAuthPassword("");
+      setAuthError("");
+    } catch (err) {
+      setAuthError(err?.message || "Authentication failed. Please try again.");
+    }
   }
 
   function handleLogout() {
     setUser(null);
     setAuthPassword("");
     setAuthError("");
+    try {
+      window.localStorage.removeItem("hrms_token");
+    } catch {
+      // ignore
+    }
   }
 
   async function onAdd(e) {
