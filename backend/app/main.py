@@ -13,14 +13,14 @@ app = FastAPI(title="HRMS Lite API")
 
 logger = logging.getLogger("hrms_lite")
 
-_cors_origins = settings.cors_origin_list()
-_cors_has_wildcard = any(o == "*" for o in _cors_origins)
-
+# For this SPA deployment we always allow all origins so that
+# the Vercel frontend can talk to the Render backend regardless
+# of host name. Credentials (cookies) are not used, only
+# Authorization headers, so this is safe for our use case.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins,
-    # If you use "*" origins, you must NOT allow credentials per CORS rules.
-    allow_credentials=False if _cors_has_wildcard else True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
