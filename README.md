@@ -85,23 +85,23 @@ This repo provides that system as a deployed, production‑ready React + FastAPI
 
 - For **HR** (per‑workspace admin):
   - `POST /employees/{employee_id}/attendance`
-    - HR can mark attendance for **today or any past date**.
-    - HR can only create one record per employee+date; once set, only Admin may change it.
+    - HR can create or update attendance for **today or any past date**.
     - Future dates are rejected.
   - `GET /employees/{employee_id}/attendance`
-    - Optional filters: `date`, `date_from`, `date_to`.
+    - Optional filters: `date`, `date_from`, `date_to` (inclusive range).
   - UI: “Attendance” tab for HR shows:
     - Employee dropdown, date picker, status selector, Save button
-    - History table with date + status
+    - History table with date + status that can be filtered by a **From / To** date range.
     - Loading/empty/error states + date range filters.
 
 - For **Admin** (global):
   - `POST /admin/hrs/{hr_id}/employees/{employee_id}/attendance`
     - Upserts attendance for **any date** for that employee.
   - `GET /admin/hrs/{hr_id}/employees/{employee_id}/attendance`
-    - Full history for that employee under the selected HR.
+    - Full history for that employee under the selected HR, with optional `date_from` / `date_to` filters (inclusive range).
   - UI: Admin console includes an “Attendance editor” panel where Admin:
     - Picks HR → picks Employee → edits any date/status.
+    - Uses its own **From / To** date range controls above the history table to filter attendance.
 
 ✅ **Status:** Fully implemented, with extra Admin tooling for corrections.
 
