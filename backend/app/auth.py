@@ -27,7 +27,7 @@ class UserCreate(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    identifier: str = Field(min_length=1, max_length=200)
     password: str
 
 
@@ -155,11 +155,26 @@ async def register(payload: UserCreate):
 
 @router.post("/login", response_model=TokenOut)
 async def login(payload: UserLogin):
-    user = await _get_user_by_email(payload.email.lower())
+    """Allow login with either email or username plus password."""
+
+    identifier = payload.identifier.strip()
+    if not identifier:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email or username is required",
+        )
+
+    db = get_db()
+
+    # Try email (stored lowercased), then username.
+    user = await db.users.find_one({"email": identifier.lower()})
+    if not user:
+        user = await db.users.find_one({"username": identifier})
+
     if not user or not _verify_password(payload.password, user["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect email/username or password",
         )
 
     access_token = _create_access_token(subject=user["_id"])

@@ -207,13 +207,20 @@ export default function App() {
 
     const trimmedName = authName.trim();
     const trimmedEmail = authEmail.trim();
-    if (!trimmedName) {
-      setAuthError("Please enter your name.");
-      return;
-    }
-    if (!trimmedEmail || !trimmedEmail.includes("@")) {
-      setAuthError("Please enter a valid work email.");
-      return;
+    if (authMode === "register") {
+      if (!trimmedName) {
+        setAuthError("Please enter your name.");
+        return;
+      }
+      if (!trimmedEmail || !trimmedEmail.includes("@")) {
+        setAuthError("Please enter a valid work email.");
+        return;
+      }
+    } else {
+      if (!trimmedEmail) {
+        setAuthError("Please enter your email or username.");
+        return;
+      }
     }
     if (!authPassword || authPassword.length < 6) {
       setAuthError("Password must be at least 6 characters.");
@@ -232,7 +239,7 @@ export default function App() {
         });
       } else {
         result = await loginUser({
-          email: trimmedEmail,
+          identifier: trimmedEmail,
           password: authPassword,
         });
       }
@@ -448,22 +455,28 @@ export default function App() {
               </button>
             </div>
             <form className="authForm" onSubmit={handleAuthSubmit}>
+              {authMode === "register" ? (
+                <label>
+                  Name
+                  <input
+                    type="text"
+                    value={authName}
+                    onChange={(e) => setAuthName(e.target.value)}
+                    placeholder="Alex Johnson"
+                  />
+                </label>
+              ) : null}
               <label>
-                Name
+                {authMode === "login" ? "Email or Username" : "Work Email"}
                 <input
-                  type="text"
-                  value={authName}
-                  onChange={(e) => setAuthName(e.target.value)}
-                  placeholder="Alex Johnson"
-                />
-              </label>
-              <label>
-                Work Email
-                <input
-                  type="email"
+                  type={authMode === "login" ? "text" : "email"}
                   value={authEmail}
                   onChange={(e) => setAuthEmail(e.target.value)}
-                  placeholder="you@company.com"
+                  placeholder={
+                    authMode === "login"
+                      ? "you@company.com or username"
+                      : "you@company.com"
+                  }
                 />
               </label>
               <label>
@@ -475,17 +488,19 @@ export default function App() {
                   placeholder="••••••••"
                 />
               </label>
-              <label>
-                Role
-                <select
-                  value={authRole}
-                  onChange={(e) => setAuthRole(e.target.value)}
-                >
-                  <option value="HR">HR</option>
-                  <option value="Admin">Admin</option>
-                  <option value="Employee">Employee</option>
-                </select>
-              </label>
+              {authMode === "register" ? (
+                <label>
+                  Role
+                  <select
+                    value={authRole}
+                    onChange={(e) => setAuthRole(e.target.value)}
+                  >
+                    <option value="HR">HR</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Employee">Employee</option>
+                  </select>
+                </label>
+              ) : null}
               {authError ? <p className="authError">{authError}</p> : null}
               <button
                 type="submit"
