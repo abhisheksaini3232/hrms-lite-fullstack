@@ -133,9 +133,8 @@ async def mark_attendance(
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
 
-    # HR can record attendance for today or any past date, but only
-    # once per day. Any subsequent changes must be done by an Admin
-    # via the admin endpoints.
+    # HR can record attendance for today or any past date.
+    # If a record for that day already exists, this will update it.
     today = date.today()
     if payload.date > today:
         raise HTTPException(
@@ -151,36 +150,20 @@ async def mark_attendance(
     }
     now = datetime.utcnow()
 
-    existing = await db.attendance.find_one(doc_filter)
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                "Attendance for this date is already recorded. "
-                "Only an Admin can modify existing records."
-            ),
-        )
-
-    try:
-        await db.attendance.insert_one(
-            {
+    # Upsert so HR can both create and correct past attendance entries.
+    await db.attendance.update_one(
+        doc_filter,
+        {
+            "$set": {
                 "employee_id": employee_id,
                 "date": date_str,
                 "owner_id": current_user["_id"],
                 "status": payload.status,
                 "created_at": now,
             }
-        )
-    except DuplicateKeyError:
-        # In case of a rare race where another writer inserted first,
-        # treat it as "already recorded".
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                "Attendance for this date is already recorded. "
-                "Only an Admin can modify existing records."
-            ),
-        )
+        },
+        upsert=True,
+    )
 
     saved = await db.attendance.find_one(doc_filter)
     return _attendance_doc_to_out(saved)
