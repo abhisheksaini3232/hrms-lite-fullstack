@@ -70,7 +70,7 @@ This repo provides that system as a deployed, production‑ready React + FastAPI
     - Employee table (ID, name, email, department, actions)
   - Supports loading state, empty state, and error messages.
 
- **Status:** Fully implemented.
+  **Status:** Fully implemented.
 
 ### 3.2 Attendance Management
 
@@ -104,8 +104,9 @@ This repo provides that system as a deployed, production‑ready React + FastAPI
   - UI: Admin console includes:
     - An "Employees under HR" table where Admin can **select** an employee or **delete** them.
     - An “Attendance editor” panel where Admin:
-    - Picks HR → picks Employee → edits any date/status.
-    - Uses its own **From / To** date range controls above the history table to filter attendance.
+      - Sees the selected employee and can also **Delete employee** from there.
+      - Picks HR → picks Employee → edits any date/status.
+      - Uses its own **From / To** date range controls above the history table to filter attendance.
 
 **Status:** Fully implemented, with extra Admin tooling for corrections.
 
@@ -301,4 +302,3 @@ All admin/HR endpoints enforce role‑based access using JWTs.
 ✅ **Status:** Brief’s expectations for validation, error handling, and UI states are satisfied.
 
 ---
-

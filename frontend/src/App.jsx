@@ -1015,6 +1015,19 @@ export default function App() {
                             {adminAttendanceEmployeeId}
                           </p>
                         </div>
+                        <div>
+                          <button
+                            type="button"
+                            className="dangerGhostBtn"
+                            onClick={() =>
+                              handleAdminDeleteEmployee(
+                                adminAttendanceEmployeeId,
+                              )
+                            }
+                          >
+                            Delete employee
+                          </button>
+                        </div>
                       </div>
                       <div className="fieldRow">
                         <label>
