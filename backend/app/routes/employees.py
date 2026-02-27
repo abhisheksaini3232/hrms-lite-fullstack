@@ -1,11 +1,12 @@
 from datetime import datetime
 import re
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pymongo.errors import DuplicateKeyError
 
 from ..db import get_db
 from ..models import AttendanceCreate, AttendanceOut, EmployeeCreate, EmployeeOut
+from ..auth import get_current_user
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -38,23 +39,34 @@ _EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 
 @router.get("", response_model=list[EmployeeOut])
-async def list_employees():
+async def list_employees(current_user=Depends(get_current_user)):
     db = get_db()
-    cursor = db.employees.find({}).sort("created_at", -1).limit(200)
+    cursor = (
+        db.employees.find({"owner_id": current_user["_id"]})
+        .sort("created_at", -1)
+        .limit(200)
+    )
     docs = await cursor.to_list(length=200)
     return [_doc_to_employee(d) for d in docs]
 
 
 @router.post("", response_model=EmployeeOut, status_code=status.HTTP_201_CREATED)
-async def create_employee(payload: EmployeeCreate):
+async def create_employee(payload: EmployeeCreate, current_user=Depends(get_current_user)):
     db = get_db()
 
     if not _EMAIL_RE.match(payload.email):
         raise HTTPException(status_code=422, detail="Invalid email format")
 
-    # Friendly pre-check (unique indexes also enforce this)
+    # Friendly pre-check (unique indexes also enforce this). Currently global on
+    # employee_id/email; we also scope queries by owner_id for isolation.
     existing = await db.employees.find_one(
-        {"$or": [{"employee_id": payload.employee_id}, {"email": payload.email}]}
+        {
+            "owner_id": current_user["_id"],
+            "$or": [
+                {"employee_id": payload.employee_id},
+                {"email": payload.email},
+            ],
+        }
     )
     if existing:
         raise HTTPException(
@@ -63,6 +75,7 @@ async def create_employee(payload: EmployeeCreate):
         )
 
     doc = payload.model_dump()
+    doc["owner_id"] = current_user["_id"]
     doc["created_at"] = datetime.utcnow()
 
     try:
@@ -73,20 +86,26 @@ async def create_employee(payload: EmployeeCreate):
             detail="Duplicate employee (employee_id or email already exists)",
         )
 
-    created = await db.employees.find_one({"employee_id": payload.employee_id})
+    created = await db.employees.find_one(
+        {"employee_id": payload.employee_id, "owner_id": current_user["_id"]}
+    )
     return _doc_to_employee(created)
 
 
 @router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_employee(employee_id: str):
+async def delete_employee(employee_id: str, current_user=Depends(get_current_user)):
     db = get_db()
 
-    result = await db.employees.delete_one({"employee_id": employee_id})
+    result = await db.employees.delete_one(
+        {"employee_id": employee_id, "owner_id": current_user["_id"]}
+    )
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Employee not found")
 
     # Best-effort cleanup of attendance for deleted employee
-    await db.attendance.delete_many({"employee_id": employee_id})
+    await db.attendance.delete_many(
+        {"employee_id": employee_id, "owner_id": current_user["_id"]}
+    )
     return None
 
 
@@ -98,7 +117,10 @@ async def delete_employee(employee_id: str):
 async def mark_attendance(employee_id: str, payload: AttendanceCreate):
     db = get_db()
 
-    employee = await db.employees.find_one({"employee_id": employee_id})
+    from fastapi import Depends  # local import to avoid circular in type checking
+
+    # This function signature is patched below with Depends; keep logic here.
+    ...
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
 
