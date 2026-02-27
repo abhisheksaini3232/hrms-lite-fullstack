@@ -33,64 +33,69 @@ async def dashboard_summary(current_user=Depends(require_roles("HR", "Admin"))):
         pipeline.append({"$match": {"owner_id": current_user["_id"]}})
     pipeline.extend(
         [
-        {"$sort": {"created_at": -1}},
-        {"$limit": 200},
-        {
-            "$lookup": {
-                "from": "attendance",
-                "let": {"eid": "$employee_id"},
-                "pipeline": [
-                    {"$match": {"$expr": {"$eq": ["$employee_id", "$$eid"]}}},
-                    {
-                        "$group": {
-                            "_id": None,
-                            "total_records": {"$sum": 1},
-                            "present_days": {
-                                "$sum": {
-                                    "$cond": [
-                                        {"$eq": ["$status", "Present"]},
-                                        1,
-                                        0,
-                                    ]
-                                }
-                            },
-                            "absent_days": {
-                                "$sum": {
-                                    "$cond": [
-                                        {"$eq": ["$status", "Absent"]},
-                                        1,
-                                        0,
-                                    ]
-                                }
-                            },
-                        }
-                    },
-                ],
-                "as": "att",
-            }
-        },
-        {
-            "$addFields": {
-                "att": {
-                    "$ifNull": [
-                        {"$arrayElemAt": ["$att", 0]},
-                        {"total_records": 0, "present_days": 0, "absent_days": 0},
-                    ]
+            {"$sort": {"created_at": -1}},
+            {"$limit": 200},
+            {
+                "$lookup": {
+                    "from": "attendance",
+                    "let": {"eid": "$employee_id"},
+                    "pipeline": [
+                        {"$match": {"$expr": {"$eq": ["$employee_id", "$$eid"]}}},
+                        {
+                            "$group": {
+                                "_id": None,
+                                "total_records": {"$sum": 1},
+                                "present_days": {
+                                    "$sum": {
+                                        "$cond": [
+                                            {"$eq": ["$status", "Present"]},
+                                            1,
+                                            0,
+                                        ]
+                                    }
+                                },
+                                "absent_days": {
+                                    "$sum": {
+                                        "$cond": [
+                                            {"$eq": ["$status", "Absent"]},
+                                            1,
+                                            0,
+                                        ]
+                                    }
+                                },
+                            }
+                        },
+                    ],
+                    "as": "att",
                 }
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,
-                "employee_id": 1,
-                "full_name": 1,
-                "department": 1,
-                "present_days": "$att.present_days",
-                "absent_days": "$att.absent_days",
-                "total_records": "$att.total_records",
-            }
-        },
-        {"$sort": {"present_days": -1, "employee_id": 1}},
+            },
+            {
+                "$addFields": {
+                    "att": {
+                        "$ifNull": [
+                            {"$arrayElemAt": ["$att", 0]},
+                            {
+                                "total_records": 0,
+                                "present_days": 0,
+                                "absent_days": 0,
+                            },
+                        ]
+                    }
+                }
+            },
+            {
+                "$project": {
+                    "_id": 0,
+                    "employee_id": 1,
+                    "full_name": 1,
+                    "department": 1,
+                    "present_days": "$att.present_days",
+                    "absent_days": "$att.absent_days",
+                    "total_records": "$att.total_records",
+                }
+            },
+            {"$sort": {"present_days": -1, "employee_id": 1}},
+        ]
     )
 
     per_employee = await db.employees.aggregate(pipeline).to_list(length=200)
