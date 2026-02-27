@@ -6,6 +6,23 @@ const API_URL = (
   .trim()
   .replace(/\/+$/, "");
 
+function getAuthToken() {
+  try {
+    return window.localStorage.getItem("hrms_token") || "";
+  } catch {
+    return "";
+  }
+}
+
+function withAuth(headers = {}) {
+  const token = getAuthToken();
+  if (!token) return headers;
+  return {
+    ...headers,
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 async function readError(res) {
   try {
     const data = await res.json();
@@ -21,7 +38,9 @@ async function readError(res) {
 }
 
 export async function getEmployees() {
-  const res = await fetch(`${API_URL}/employees`);
+  const res = await fetch(`${API_URL}/employees`, {
+    headers: withAuth(),
+  });
   if (!res.ok) throw new Error(await readError(res));
   return res.json();
 }
@@ -29,7 +48,7 @@ export async function getEmployees() {
 export async function createEmployee(payload) {
   const res = await fetch(`${API_URL}/employees`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: withAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
@@ -41,6 +60,7 @@ export async function createEmployee(payload) {
 export async function deleteEmployee(employeeId) {
   const res = await fetch(`${API_URL}/employees/${employeeId}`, {
     method: "DELETE",
+    headers: withAuth(),
   });
   if (!res.ok) throw new Error(await readError(res));
 }
@@ -48,7 +68,7 @@ export async function deleteEmployee(employeeId) {
 export async function markAttendance(employeeId, payload) {
   const res = await fetch(`${API_URL}/employees/${employeeId}/attendance`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: withAuth({ "Content-Type": "application/json" }),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(await readError(res));
@@ -70,13 +90,45 @@ export async function getAttendance(employeeId, filters) {
     if (dateTo) url.searchParams.set("date_to", dateTo);
   }
 
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), {
+    headers: withAuth(),
+  });
   if (!res.ok) throw new Error(await readError(res));
   return res.json();
 }
 
 export async function getDashboardSummary() {
-  const res = await fetch(`${API_URL}/dashboard/summary`);
+  const res = await fetch(`${API_URL}/dashboard/summary`, {
+    headers: withAuth(),
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+export async function registerUser(payload) {
+  const res = await fetch(`${API_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+export async function loginUser(payload) {
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+export async function getCurrentUser() {
+  const res = await fetch(`${API_URL}/auth/me`, {
+    headers: withAuth(),
+  });
   if (!res.ok) throw new Error(await readError(res));
   return res.json();
 }

@@ -1,22 +1,34 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from ..db import get_db
+from ..auth import get_current_user
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 
 @router.get("/summary")
-async def dashboard_summary():
+async def dashboard_summary(current_user=Depends(get_current_user)):
     db = get_db()
 
-    employees_total = await db.employees.count_documents({})
-    attendance_total = await db.attendance.count_documents({})
-    present_total = await db.attendance.count_documents({"status": "Present"})
-    absent_total = await db.attendance.count_documents({"status": "Absent"})
+    owner_filter = {"owner_id": current_user["_id"]}
+
+    employees_total = await db.employees.count_documents(owner_filter)
+    attendance_total = await db.attendance.count_documents(owner_filter)
+    present_total = await db.attendance.count_documents(
+        {"status": "Present", **owner_filter}
+    )
+    absent_total = await db.attendance.count_documents(
+        {"status": "Absent", **owner_filter}
+    )
 
     pipeline = [
+        {
+            "$match": {
+                "owner_id": current_user["_id"],
+            }
+        },
         {"$sort": {"created_at": -1}},
         {"$limit": 200},
         {

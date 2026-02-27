@@ -9,9 +9,19 @@ import {
   getAttendance,
   getEmployees,
   markAttendance,
+  registerUser,
+  loginUser,
+  getCurrentUser,
 } from "./api.js";
 
 export default function App() {
+  const [authMode, setAuthMode] = useState("login"); // 'login' | 'register'
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [user, setUser] = useState(null);
+
   const [tab, setTab] = useState("employees");
   const [showAddEmployee, setShowAddEmployee] = useState(false);
 
@@ -39,6 +49,8 @@ export default function App() {
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState("");
 
+  const isAuthenticated = !!user;
+
   const canSubmit = useMemo(() => {
     return (
       employeeId.trim().length > 0 &&
@@ -53,6 +65,21 @@ export default function App() {
       selectedEmployeeId.trim().length > 0 && attendanceDate.trim().length > 0
     );
   }, [selectedEmployeeId, attendanceDate]);
+
+  useEffect(() => {
+    async function bootstrapAuth() {
+      try {
+        const token = window.localStorage.getItem("hrms_token");
+        if (!token) return;
+        const me = await getCurrentUser();
+        setUser(me);
+      } catch {
+        window.localStorage.removeItem("hrms_token");
+        setUser(null);
+      }
+    }
+    bootstrapAuth();
+  }, []);
 
   async function refresh() {
     setLoading(true);
@@ -84,10 +111,11 @@ export default function App() {
   }
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     refresh();
     refreshDashboard();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAuthenticated]);
 
   async function refreshAttendance(
     nextEmployeeId = selectedEmployeeId,
@@ -117,6 +145,38 @@ export default function App() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, selectedEmployeeId, attendanceFilterFrom, attendanceFilterTo]);
+
+  async function handleAuthSubmit(e) {
+    e.preventDefault();
+    setAuthError("");
+    setAuthLoading(true);
+    try {
+      const payload = { email: authEmail.trim(), password: authPassword };
+      let result;
+      if (authMode === "register") {
+        result = await registerUser(payload);
+      } else {
+        result = await loginUser(payload);
+      }
+      window.localStorage.setItem("hrms_token", result.access_token);
+      const me = await getCurrentUser();
+      setUser(me);
+      setAuthPassword("");
+      setAuthError("");
+    } catch (e2) {
+      setAuthError(e2?.message || "Authentication failed");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  function handleLogout() {
+    window.localStorage.removeItem("hrms_token");
+    setUser(null);
+    setEmployees([]);
+    setDashboard(null);
+    setAttendance([]);
+  }
 
   async function onAdd(e) {
     e.preventDefault();
@@ -189,12 +249,92 @@ export default function App() {
     if (!dashboard?.per_employee) return [];
     return dashboard.per_employee;
   }, [dashboard]);
+  if (!isAuthenticated) {
+    return (
+      <div className="app appAuth">
+        <div className="authShell">
+          <div className="authIntro">
+            <h1>HR Workspace</h1>
+            <p>
+              Sign in or create an HR account to manage your own employees and
+              attendance data in an isolated workspace.
+            </p>
+          </div>
+          <div className="authCard">
+            <div className="authTabs">
+              <button
+                type="button"
+                className={authMode === "login" ? "authTab active" : "authTab"}
+                onClick={() => {
+                  setAuthMode("login");
+                  setAuthError("");
+                }}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                className={
+                  authMode === "register" ? "authTab active" : "authTab"
+                }
+                onClick={() => {
+                  setAuthMode("register");
+                  setAuthError("");
+                }}
+              >
+                Create Account
+              </button>
+            </div>
+            <form className="authForm" onSubmit={handleAuthSubmit}>
+              <label>
+                Work Email
+                <input
+                  type="email"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  required
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="password"
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+              </label>
+              {authError ? <p className="authError">{authError}</p> : null}
+              <button
+                type="submit"
+                className="primaryBtn fullWidth"
+                disabled={authLoading}
+              >
+                {authLoading
+                  ? "Please wait..."
+                  : authMode === "login"
+                    ? "Sign In"
+                    : "Create HR Account"}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="app">
-      <Topbar tab={tab} onTabChange={setTab} />
+    <div className="app appDashboard">
+      <Topbar
+        tab={tab}
+        onTabChange={setTab}
+        user={user}
+        onLogout={handleLogout}
+      />
 
-      <main className="shell">
+      <main className="layoutShell">
         {tab === "employees" ? (
           <EmployeesTab
             employees={employees}

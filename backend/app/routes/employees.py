@@ -114,18 +114,25 @@ async def delete_employee(employee_id: str, current_user=Depends(get_current_use
     response_model=AttendanceOut,
     status_code=status.HTTP_201_CREATED,
 )
-async def mark_attendance(employee_id: str, payload: AttendanceCreate):
+async def mark_attendance(
+    employee_id: str,
+    payload: AttendanceCreate,
+    current_user=Depends(get_current_user),
+):
     db = get_db()
 
-    from fastapi import Depends  # local import to avoid circular in type checking
-
-    # This function signature is patched below with Depends; keep logic here.
-    ...
+    employee = await db.employees.find_one(
+        {"employee_id": employee_id, "owner_id": current_user["_id"]}
+    )
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
 
     date_str = _date_to_str(payload.date)
-    doc_filter = {"employee_id": employee_id, "date": date_str}
+    doc_filter = {
+        "employee_id": employee_id,
+        "date": date_str,
+        "owner_id": current_user["_id"],
+    }
     now = datetime.utcnow()
 
     # Marking attendance should be idempotent for same date: update if exists, insert if not.
@@ -151,14 +158,17 @@ async def list_attendance(
         default=None,
         description="Filter range end (YYYY-MM-DD)",
     ),
+    current_user=Depends(get_current_user),
 ):
     db = get_db()
 
-    employee = await db.employees.find_one({"employee_id": employee_id})
+    employee = await db.employees.find_one(
+        {"employee_id": employee_id, "owner_id": current_user["_id"]}
+    )
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
 
-    query = {"employee_id": employee_id}
+    query = {"employee_id": employee_id, "owner_id": current_user["_id"]}
     if date:
         query["date"] = date
     else:
