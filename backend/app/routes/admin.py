@@ -74,6 +74,47 @@ async def list_hr_employees(hr_id: str, current_user=Depends(require_roles("Admi
   }
 
 
+@router.delete(
+    "/hrs/{hr_id}/employees/{employee_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def admin_delete_employee(
+    hr_id: str,
+    employee_id: str,
+    current_user=Depends(require_roles("Admin")),
+):
+    """Allow an Admin to delete an employee under a specific HR.
+
+    This mirrors the HR delete endpoint but is scoped by the provided
+    `hr_id` so that super admins can manage data for any HR account.
+    """
+
+    db = get_db()
+
+    hr = await db.users.find_one({"_id": hr_id, "role": "HR"})
+    if not hr:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="HR account not found",
+        )
+
+    result = await db.employees.delete_one(
+        {"employee_id": employee_id, "owner_id": hr_id}
+    )
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found for this HR account",
+        )
+
+    # Best-effort cleanup of attendance for deleted employee
+    await db.attendance.delete_many(
+        {"employee_id": employee_id, "owner_id": hr_id}
+    )
+
+    return None
+
+
 def _attendance_doc_to_out(doc) -> AttendanceOut:
     return AttendanceOut(
         employee_id=doc["employee_id"],

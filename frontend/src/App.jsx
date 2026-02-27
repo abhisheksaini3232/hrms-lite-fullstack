@@ -92,24 +92,25 @@ export default function App() {
   const userRole = user?.role || "HR";
 
   const canSubmit = useMemo(() => {
-    return (
-      employeeId.trim().length > 0 &&
-      fullName.trim().length > 0 &&
-      email.trim().length > 0 &&
-      department.trim().length > 0
-    );
-  }, [employeeId, fullName, email, department]);
-
-  const canMarkAttendance = useMemo(() => {
-    return (
-      selectedEmployeeId.trim().length > 0 && attendanceDate.trim().length > 0
-    );
-  }, [selectedEmployeeId, attendanceDate]);
-
-  useEffect(() => {
-    if (!isAuthenticated || userRole !== "Employee") return;
-
-    async function loadSelf() {
+    import {
+      getEmployees,
+      createEmployee,
+      deleteEmployee,
+      markAttendance,
+      getAttendance,
+      getDashboardSummary,
+      getMyProfile,
+      getMyAttendance,
+      markMyAttendance,
+      registerUser,
+      loginUser,
+      getCurrentUser,
+      getHrsOverview,
+      getHrEmployees,
+      adminGetAttendance,
+      adminMarkAttendance,
+      adminDeleteEmployee,
+    } from "./api";
       setSelfLoading(true);
       setSelfError("");
       try {
@@ -527,6 +528,41 @@ export default function App() {
     loadAdmin();
   }, [userRole, adminSelectedHrId]);
 
+  async function handleAdminDeleteEmployee(employeeId) {
+    if (!adminSelectedHrId || !employeeId) return;
+    const confirmed = window.confirm(
+      "Delete this employee and all of their attendance records?",
+    );
+    if (!confirmed) return;
+    setAdminError("");
+    try {
+      await adminDeleteEmployee(adminSelectedHrId, employeeId);
+      setAdminHrEmployees((prev) =>
+        prev.filter((e) => e.employee_id !== employeeId),
+      );
+      setAdminHrs((prev) =>
+        prev.map((hr) =>
+          hr.id === adminSelectedHrId
+            ? {
+                ...hr,
+                employees_count: Math.max(0, (hr.employees_count || 1) - 1),
+              }
+            : hr,
+        ),
+      );
+      if (adminAttendanceEmployeeId === employeeId) {
+        setAdminAttendanceEmployeeId("");
+        setAdminAttendance([]);
+        setAdminAttendanceError("");
+        setAdminAttendanceSaved(false);
+      }
+    } catch (e) {
+      setAdminError(
+        e?.message || "Failed to delete employee for this HR account.",
+      );
+    }
+  }
+
   // When switching HRs, clear any previously selected employee and
   // their attendance to avoid showing stale data from another HR.
   useEffect(() => {
@@ -882,6 +918,7 @@ export default function App() {
                           <th>Name</th>
                           <th>Email</th>
                           <th>Department</th>
+                          <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -903,6 +940,18 @@ export default function App() {
                             <td>{emp.full_name}</td>
                             <td>{emp.email}</td>
                             <td>{emp.department}</td>
+                            <td>
+                              <button
+                                type="button"
+                                className="dangerGhostBtn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAdminDeleteEmployee(emp.employee_id);
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>

@@ -193,6 +193,19 @@ export async function getHrEmployees(hrId) {
   return res.json();
 }
 
+export async function adminDeleteEmployee(hrId, employeeId) {
+  const res = await fetch(
+    `${API_URL}/admin/hrs/${encodeURIComponent(
+      hrId,
+    )}/employees/${encodeURIComponent(employeeId)}`,
+    {
+      method: "DELETE",
+      headers: withAuth(),
+    },
+  );
+  if (!res.ok) throw new Error(await readError(res));
+}
+
 export async function adminGetAttendance(hrId, employeeId, filters) {
   const url = new URL(
     `${API_URL}/admin/hrs/${encodeURIComponent(

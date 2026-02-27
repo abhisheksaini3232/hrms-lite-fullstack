@@ -99,7 +99,11 @@ This repo provides that system as a deployed, production‑ready React + FastAPI
     - Upserts attendance for **any date** for that employee.
   - `GET /admin/hrs/{hr_id}/employees/{employee_id}/attendance`
     - Full history for that employee under the selected HR, with optional `date_from` / `date_to` filters (inclusive range).
-  - UI: Admin console includes an “Attendance editor” panel where Admin:
+  - `DELETE /admin/hrs/{hr_id}/employees/{employee_id}`
+    - Deletes an employee under the selected HR account and cleans up their attendance.
+  - UI: Admin console includes:
+    - An "Employees under HR" table where Admin can **select** an employee or **delete** them.
+    - An “Attendance editor” panel where Admin:
     - Picks HR → picks Employee → edits any date/status.
     - Uses its own **From / To** date range controls above the history table to filter attendance.
 
