@@ -334,6 +334,20 @@ select {
   font-size: 13px;
 }
 
+/* Make the native calendar icon visible on dark background */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.4);
+  opacity: 0.9;
+}
+
+input[type="date"]::-moz-focus-inner {
+  border: 0;
+}
+
+input[type="date"]::-ms-clear {
+  display: none;
+}
+
 input::placeholder,
 select::placeholder {
   color: #6b7280;
