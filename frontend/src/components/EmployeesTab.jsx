@@ -222,8 +222,12 @@ export default function EmployeesTab({
                       {emp.employee_id}
                     </td>
                     <td data-label="Name">{emp.full_name}</td>
-                    <td data-label="Email">{emp.email}</td>
-                    <td data-label="Department">{emp.department}</td>
+                    <td data-label="Email" style={{ paddingRight: "24px" }}>
+                      {emp.email}
+                    </td>
+                    <td data-label="Department" style={{ paddingLeft: "8px" }}>
+                      {emp.department}
+                    </td>
                     <td data-label="Actions">
                       <div className="rowInline">
                         <button
