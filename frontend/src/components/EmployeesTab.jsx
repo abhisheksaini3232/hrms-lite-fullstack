@@ -222,10 +222,13 @@ export default function EmployeesTab({
                       {emp.employee_id}
                     </td>
                     <td data-label="Name">{emp.full_name}</td>
-                    <td data-label="Email" style={{ paddingRight: "24px" }}>
+                    <td
+                      data-label="Email"
+                      style={{ minWidth: "160px", wordBreak: "break-all" }}
+                    >
                       {emp.email}
                     </td>
-                    <td data-label="Department" style={{ paddingLeft: "8px" }}>
+                    <td data-label="Department" style={{ minWidth: "100px" }}>
                       {emp.department}
                     </td>
                     <td data-label="Actions">
