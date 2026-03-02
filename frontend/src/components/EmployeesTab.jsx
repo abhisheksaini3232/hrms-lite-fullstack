@@ -222,14 +222,19 @@ export default function EmployeesTab({
                       {emp.employee_id}
                     </td>
                     <td data-label="Name">{emp.full_name}</td>
-                    <td
-                      data-label="Email"
-                      style={{ minWidth: "160px", wordBreak: "break-all" }}
-                    >
-                      {emp.email}
-                    </td>
-                    <td data-label="Department" style={{ minWidth: "100px" }}>
-                      {emp.department}
+                    <td colSpan={2} style={{ padding: 0 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "32px",
+                          alignItems: "center",
+                          minWidth: "260px",
+                          wordBreak: "break-all",
+                        }}
+                      >
+                        <span style={{ flex: 1 }}>{emp.email}</span>
+                        <span style={{ flex: 1 }}>{emp.department}</span>
+                      </div>
                     </td>
                     <td data-label="Actions">
                       <div className="rowInline">
