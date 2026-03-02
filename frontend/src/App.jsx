@@ -938,8 +938,8 @@ export default function App() {
                           >
                             <td>{emp.employee_id}</td>
                             <td>{emp.full_name}</td>
-                            <td>{emp.email}</td>
-                            <td>{emp.department}</td>
+                            <td className="cellEmail">{emp.email}</td>
+                            <td className="cellDepartment">{emp.department}</td>
                             <td>
                               <button
                                 type="button"

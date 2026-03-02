@@ -440,6 +440,15 @@ button:disabled {
   border-bottom: 1px solid rgba(31, 41, 55, 0.9);
 }
 
+.dataTable td.cellEmail {
+  min-width: 180px;
+  word-break: break-all;
+}
+
+.dataTable td.cellDepartment {
+  min-width: 120px;
+}
+
 .dataTable th {
   font-size: 11px;
   letter-spacing: 0.08em;
